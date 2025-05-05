@@ -268,8 +268,11 @@ void static wifi_TCP_callback(uint8_t byte)
                 length = 0;
                 index = 0;
 
-            wifi_clear_databuffer_and_index();
-            callback_when_message_received_static();
+                wifi_clear_databuffer_and_index();
+                if (callback_when_message_received_static != NULL)
+                {
+                    callback_when_message_received_static();
+                }
             }
             break;
     }

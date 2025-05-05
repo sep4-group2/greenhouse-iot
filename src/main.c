@@ -1,5 +1,6 @@
 #include <util/delay.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
@@ -41,7 +42,7 @@ void loop(){
     dht11_get(&humidity_int, &humidity_dec, &temperature_int, &temperature_dec);
 
     uint16_t light_int = light_read();
-    char payload[80] = "";
+    char payload[90] = "";
     sprintf(payload, "{\"air_temperature\":%d,\"air_humidity\":%d,\"soil_humidity\":%d,\"light_level\":%d}", temperature_int, humidity_int, 20, light_int);
 
     mqtt_publish( topic, payload, 0, 0, 0 );
@@ -63,7 +64,16 @@ int main()
     int port = 1883;
     char *client_id = "client1";
 
-    mqtt_connect( ssid, password, ip, port, client_id );
+    WIFI_ERROR_MESSAGE_t mqtt_result = mqtt_connect( ssid, password, ip, port, client_id );
+
+    if(mqtt_result != WIFI_OK)
+    {
+        for (int i = 0; i < 3; ++i) {
+            if (mqtt_reconnect( ip, port, client_id ) == WIFI_OK)
+                break;
+            _delay_ms(1000); // Delay before retry
+        }
+    }
 
     periodic_task_init_a(loop, 5000);
 

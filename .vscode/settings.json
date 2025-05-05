@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "interrupt.h": "c",
-        "dht11.h": "c"
+        "dht11.h": "c",
+        "stdlib.h": "c"
     }
 }
