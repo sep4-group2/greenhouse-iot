@@ -11,6 +11,8 @@ static int create_publish_packet (
     char *topic, char *payload, char *buf, int buflen,
     int dup_flag, int qos_flag, int retained_flag, short packet_id );
 
+// code implementations
+
 void mqtt_init()
 {
 
@@ -33,18 +35,22 @@ void mqtt_connect( char *ssid, char *password, char *ip, uint16_t port, char *cl
     }
     
     char wifi_network_message[100];
-    sprintf(wifi_network_message, "Connected to wifi at - ssid: %s | password: %s !", ssid, password);
+    sprintf(wifi_network_message, "Connected to wifi at - ssid: %s | password: %s\n", ssid, password);
     uart_send_string_blocking(USART_0, wifi_network_message);
+
+    wifi_command_close_TCP_connection();
 
     WIFI_ERROR_MESSAGE_t wifi_tcp_connect_message = wifi_command_create_TCP_connection( ip, port, NULL, NULL);
     if (wifi_tcp_connect_message != WIFI_OK)
     {
-        uart_send_string_blocking(USART_0, "Error making tcp connection!\n");
+        char wifi_tcp_error_message[100];
+        sprintf(wifi_tcp_error_message, "Error making tcp connection! Error: %d\n", wifi_tcp_connect_message);
+        uart_send_string_blocking(USART_0, wifi_tcp_error_message);
         return;
     }
 
     char wifi_tcp_message[100];
-    sprintf(wifi_tcp_message, "Made tcp connection at - ip: %s | port: %d !", ip, port);
+    sprintf(wifi_tcp_message, "Made tcp connection at - ip: %s | port: %d\n", ip, port);
     uart_send_string_blocking(USART_0, wifi_tcp_message);
 
     unsigned char connect_packet_buf[200];
@@ -59,6 +65,7 @@ void mqtt_connect( char *ssid, char *password, char *ip, uint16_t port, char *cl
 
 void mqtt_publish( char *topic, char *payload, int dup_flag, int qos_flag, int retained_flag )
 {
+
     short packet_id;
     char transmit_buf[200];
     int transmit_buflen = sizeof(transmit_buf);
@@ -108,6 +115,7 @@ static int create_publish_packet (
         buf, buflen, dup_flag, qos_flag, retained_flag, 
         packet_id, topicString, payload, payloadlen
     );
+
     return len;
 
 }
