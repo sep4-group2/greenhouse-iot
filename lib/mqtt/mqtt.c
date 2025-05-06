@@ -6,6 +6,12 @@
 
 #include "MQTTPacket.h"
 
+#define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
+unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
+WIFI_TCP_Callback_t callback_when_message_received();
+
+static void clear_received_message_buf();
+
 static int create_connect_packet( unsigned char *buf, int buflen, char *client_id );
 static int create_publish_packet ( 
     char *topic, char *payload, char *buf, int buflen,
@@ -40,7 +46,9 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
 
     wifi_command_close_TCP_connection();
 
-    WIFI_ERROR_MESSAGE_t wifi_tcp_connect_message = wifi_command_create_TCP_connection( ip, port, NULL, NULL);
+    WIFI_ERROR_MESSAGE_t wifi_tcp_connect_message = wifi_command_create_TCP_connection(
+         ip, port, callback_when_message_received, mqtt_received_message_buf
+    );
     if (wifi_tcp_connect_message != WIFI_OK)
     {
         char wifi_tcp_error_message[100];
@@ -152,5 +160,91 @@ static int create_publish_packet (
     );
 
     return len;
+
+}
+
+static void clear_received_message_buf() 
+{
+
+    for (uint16_t i = 0; i < MQTT_RECEIVED_MESSAGE_BUF_SIZE; i++)
+        mqtt_received_message_buf[i] = '\0';
+    
+}
+
+WIFI_TCP_Callback_t callback_when_message_received() 
+{
+    // connack flags
+    unsigned char sessionPresent;
+    unsigned char connack_rc;
+
+    // publish flags
+    unsigned char dup;
+    int qos;
+    unsigned char retained;
+    unsigned short packetId;
+    MQTTString topic;
+    unsigned char *payload;
+    int payloadLen;
+
+    unsigned char packet_type = mqtt_received_message_buf[0] >> 4;
+
+    switch ( packet_type ) 
+    {
+
+    case CONNACK:
+
+        if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, mqtt_received_message_buf, MQTT_RECEIVED_MESSAGE_BUF_SIZE) == 1 ) {
+            uart_send_string_blocking( USART_0, "connack received!\n" );
+
+            char session_present_message[40];
+            sprintf( session_present_message, "session present (packet flag): %d\n", sessionPresent );
+            uart_send_string_blocking( USART_0, session_present_message);
+            
+            char return_code_message[20];
+            sprintf( return_code_message, "return code: %d\n", connack_rc );
+            uart_send_string_blocking( USART_0, return_code_message );
+        } else {
+            uart_send_string_blocking( USART_0, "connack is wrong!\n");
+        }
+
+    break;
+
+    case PINGRESP:
+        uart_send_string_blocking( USART_0, "pingresp received!\n" );
+    break;
+
+    case PUBLISH:
+
+        if( MQTTDeserialize_publish( 
+            &dup, &qos, &retained, &packetId, 
+            &topic, &payload, &payloadLen,
+            mqtt_received_message_buf, MQTT_RECEIVED_MESSAGE_BUF_SIZE 
+        ) == 1 )
+        {
+            uart_send_string_blocking( USART_0, "publish received!\n" );
+
+            char publish_topic_message[100];
+            sprintf( publish_topic_message, "topic of the publish '%.*s'\n", topic.lenstring.len, topic.lenstring.data );
+            uart_send_string_blocking( USART_0, publish_topic_message);
+
+            char publish_payload_message[200];
+            sprintf( publish_payload_message, "payload of the publish: %.*s\n", payloadLen, payload );
+            uart_send_string_blocking( USART_0, publish_payload_message);
+
+        }
+
+
+        uart_send_string_blocking( USART_0, "publish received!\n" );
+    break;
+    
+    default:
+        
+    break;
+
+    }
+
+    clear_received_message_buf();
+
+    return ;
 
 }
