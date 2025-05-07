@@ -8,4 +8,3 @@ void leds_turnOff(uint8_t led_no);//takes in the value 1, 2, 3 or 4, each number
 
 void leds_toggle(uint8_t led_no);//takes in the value 1, 2, 3 or 4, each number corresponding to a LED. 
 
-uint8_t light_get_percentage(void);

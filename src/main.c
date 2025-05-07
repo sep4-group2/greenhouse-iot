@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
+#include "light.h"
+#include "display.h"
 
 static uint8_t _buff[100];
 static uint8_t _index = 0;
@@ -36,6 +38,8 @@ int main()
 
     uart_init(USART_0, 9600, console_rx);
     wifi_init();
+    light_init();
+    display_init();
 
     sei();
 
@@ -52,6 +56,10 @@ int main()
             _done = false;
             uart_send_string_blocking(USART_0, prompt_text);
         }
+
+        uint8_t brightness = light_get_percentage();
+        display_int(brightness); 
+        _delay_ms(500);
     }
     return 0;
 }
