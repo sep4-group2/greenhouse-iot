@@ -214,6 +214,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_close_TCP_connection()
 #define PREFIX_LENGTH 5
 
 WIFI_TCP_Callback_t callback_when_message_received_static;
+int *received_message_length_static;
 char *received_message_buffer_static_pointer;
 void static wifi_TCP_callback(uint8_t byte)
 {
@@ -262,6 +263,9 @@ void static wifi_TCP_callback(uint8_t byte)
             if(index == length) {
                 // message is complete, null terminate the string
                 received_message_buffer_static_pointer[index] = '\0';
+                if(NULL != received_message_length_static) {
+                    *received_message_length_static = length;
+                }
 
                 // reset to IDLE
                 state = IDLE;
@@ -279,10 +283,11 @@ void static wifi_TCP_callback(uint8_t byte)
   
 }
 
-WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer)
+WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, int *received_message_length )
 {
     received_message_buffer_static_pointer = received_message_buffer;
     callback_when_message_received_static = callback_when_message_received;
+    received_message_length_static = received_message_length;
     char sendbuffer[128];
     char portString[7];
 

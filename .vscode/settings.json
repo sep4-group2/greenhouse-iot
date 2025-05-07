@@ -5,6 +5,7 @@
         "stdlib.h": "c",
         "mqttpacket.h": "c",
         "mqttformat.h": "c",
-        "mqttsubscribe.h": "c"
+        "mqttsubscribe.h": "c",
+        "mqtt.h": "c"
     }
 }

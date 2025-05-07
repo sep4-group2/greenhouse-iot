@@ -7,7 +7,10 @@
 #include "MQTTPacket.h"
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
+
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
+int mqtt_received_message_length;
+
 WIFI_TCP_Callback_t callback_when_message_received();
 static void process_single_packet( unsigned char packet_type, char* buf, int len );
 
@@ -49,7 +52,7 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
     wifi_command_close_TCP_connection();
 
     WIFI_ERROR_MESSAGE_t wifi_tcp_connect_message = wifi_command_create_TCP_connection(
-         ip, port, callback_when_message_received, mqtt_received_message_buf
+         ip, port, callback_when_message_received, mqtt_received_message_buf, &mqtt_received_message_length
     );
     if (wifi_tcp_connect_message != WIFI_OK)
     {
@@ -60,7 +63,7 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
     }
 
     char wifi_tcp_message[100];
-    sprintf(wifi_tcp_message, "Made tcp connection at - ip: %s | port: %d\n", ip, port);
+    sprintf( wifi_tcp_message, "Made tcp connection at - ip: %s | port: %d\n", ip, port );
     uart_send_string_blocking(USART_0, wifi_tcp_message);
 
     unsigned char connect_packet_buf[200];
@@ -79,7 +82,10 @@ WIFI_ERROR_MESSAGE_t mqtt_reconnect( char *ip, uint16_t port, char *client_id )
 
     wifi_command_close_TCP_connection();
 
-    WIFI_ERROR_MESSAGE_t wifi_tcp_connect_message = wifi_command_create_TCP_connection( ip, port, NULL, NULL);
+    WIFI_ERROR_MESSAGE_t wifi_tcp_connect_message = wifi_command_create_TCP_connection(
+        ip, port, callback_when_message_received, mqtt_received_message_buf, &mqtt_received_message_length
+    );
+
     if (wifi_tcp_connect_message != WIFI_OK)
     {
         char wifi_tcp_error_message[100];
@@ -242,14 +248,14 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     case CONNACK:
 
         if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
-            uart_send_string_blocking( USART_0, "connack received!\n" );
+            // uart_send_string_blocking( USART_0, "connack received!\n" );
 
             char subscribe_topic[] = "greenhouse/control/light";
-            mqtt_subscribe( subscribe_topic, 0, 1 );
+            mqtt_subscribe( subscribe_topic, 0, 0 );
 
         } else {
 
-            uart_send_string_blocking( USART_0, "connack is wrong!\n");
+            // uart_send_string_blocking( USART_0, "connack is wrong!\n");
 
         }
 
@@ -257,19 +263,19 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
     case SUBACK:
 
-        uart_send_string_blocking( USART_0, "subscription acknowledgement received!\n" );
+        // uart_send_string_blocking( USART_0, "subscription acknowledgement received!\n" );
 
     break;
 
     case PUBACK:
 
-        uart_send_string_blocking( USART_0, "publish acknowledgement received!\n" );
+        // uart_send_string_blocking( USART_0, "publish acknowledgement received!\n" );
 
     break;
 
     case PINGRESP:
 
-        uart_send_string_blocking( USART_0, "ping response received!\n" );
+        // uart_send_string_blocking( USART_0, "ping response received!\n" );
 
     break;
 
@@ -287,7 +293,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
         }
         else {
 
-            uart_send_string_blocking(USART_0, "publish packet parse failed!\n");
+            // uart_send_string_blocking(USART_0, "publish packet parse failed!\n");
 
         }
 
@@ -295,7 +301,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     
     default:
 
-        uart_send_string_blocking( USART_0, "unrecognized packet or some other garbo received...\n" );
+        // uart_send_string_blocking( USART_0, "unrecognized packet or some other garbo received...\n" );
 
     break;
 
@@ -305,21 +311,15 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 WIFI_TCP_Callback_t callback_when_message_received() 
 {
 
-    //     for (int i = 0; i < MQTT_RECEIVED_MESSAGE_BUF_SIZE; i++) {
-    //     char hexbyte[4];
-    //     sprintf(hexbyte, "%02X ", mqtt_received_message_buf[i]);
-    //     uart_send_string_blocking(USART_0, hexbyte);
-    // }
-    // uart_send_string_blocking(USART_0, "\n");
-
     int pos = 0;
-    int total_bytes_received = strlen(mqtt_received_message_buf);
+    int total_bytes_received = mqtt_received_message_length;
 
     while (pos < total_bytes_received) {
+
         unsigned char packet_type = mqtt_received_message_buf[pos] >> 4;
 
         int rem_len;
-        int consumed_bytes = MQTTPacket_decodeBuf( &mqtt_received_message_buf[pos], &rem_len );
+        int consumed_bytes = MQTTPacket_decodeBuf( &mqtt_received_message_buf[pos + 1], &rem_len );
 
         int packet_total_len = 1 + consumed_bytes + rem_len;
 
@@ -327,9 +327,6 @@ WIFI_TCP_Callback_t callback_when_message_received()
 
         pos += packet_total_len;
 
-        // char hexbyte[5];
-        // sprintf(hexbyte, "%02X ", pos);
-        // uart_send_string_blocking(USART_0, hexbyte);
     }
 
     clear_received_message_buf();
