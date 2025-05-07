@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
+#include "light.h"
+#include "display.h"
 
 static uint8_t _buff[100];
 static uint8_t _index = 0;
@@ -36,22 +38,22 @@ int main()
 
     uart_init(USART_0, 9600, console_rx);
     wifi_init();
+    light_init();
+    display_init();
 
     sei();
 
-    wifi_command_join_AP("Erlands SEP4", "ViaUC1234");
-    wifi_command_create_TCP_connection("192.168.137.102", 23, NULL, NULL);
-    wifi_command_TCP_transmit((uint8_t*)welcome_text, strlen(welcome_text) );
-    uart_send_string_blocking(USART_0, prompt_text);
-
     while(1)
     {
-        if(_done)
-        {
-            wifi_command_TCP_transmit(_buff, strlen((char*)_buff) );
-            _done = false;
-            uart_send_string_blocking(USART_0, prompt_text);
-        }
+        uint8_t brightness = light_get_percentage();
+
+        //char temp[20];
+        //sprintf(temp, "light: %d percent", brightness);
+
+        //uart_send_string_blocking(USART_0,temp );
+       // uint16_t brightness = light_read();
+        display_int(brightness); 
+       // _delay_ms(1);
     }
     return 0;
 }

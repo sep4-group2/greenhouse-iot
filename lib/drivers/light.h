@@ -28,4 +28,5 @@ void light_init(void);
  * @return 10-bit ADC value read from the photoresistor
  */
 uint16_t light_read(void);
+uint8_t light_get_percentage(void);
 
