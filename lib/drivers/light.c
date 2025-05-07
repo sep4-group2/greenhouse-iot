@@ -65,5 +65,5 @@ uint32_t timeout = 40000;//if 2cc for incrementing and evaluation the timeout is
     uint16_t adc_value = ADCL;
     adc_value |= (ADCH << 8);
 
-    return adc_value;
+    return 1024 - adc_value;
 }
