@@ -286,9 +286,23 @@ static volatile uint8_t usart3_transmission_in_progress = 0;
 void uart_send_array_nonBlocking(USART_t usart, uint8_t *str, uint16_t len)
 {
 
+    switch(usart){
+        case USART_0:
+            while (usart0_transmission_in_progress) { }
+        break;
 
-    while (usart0_transmission_in_progress)
-    {
+        case USART_1:
+            while (usart1_transmission_in_progress) { }
+        break;
+
+        case USART_2:
+            while (usart2_transmission_in_progress) { }
+        break;
+
+        case USART_3:
+            while (usart3_transmission_in_progress) { }
+        break;
+
     }
 
     cli(); // Disable global interrupts to avoid conflicts during variable update
@@ -390,7 +404,7 @@ ISR(USART2_UDRE_vect)
     // Check if we have more data to send
     if (usart2_transmit_index < usart2_transmit_length)
     {
-        UDR2 = usart2_transmit_buffer[usart0_transmit_index++]; // Send next character and increment index
+        UDR2 = usart2_transmit_buffer[usart2_transmit_index++]; // Send next character and increment index
     }
     else
     {
