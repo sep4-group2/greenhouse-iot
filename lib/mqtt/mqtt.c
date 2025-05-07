@@ -9,13 +9,15 @@
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
 WIFI_TCP_Callback_t callback_when_message_received();
+static void process_single_packet( unsigned char packet_type, char* buf, int len );
 
 static void clear_received_message_buf();
 
-static int create_connect_packet( unsigned char *buf, int buflen, char *client_id );
+static int create_connect_packet ( unsigned char *buf, int buflen, char *client_id );
 static int create_publish_packet ( 
     char *topic, char *payload, char *buf, int buflen,
     int dup_flag, int qos_flag, int retained_flag, short packet_id );
+static int create_subscribe_packet ( char *topic, char *buf, int buflen, int dup_flag, short packet_id, int count, int qos );
 
 // code implementations
 
@@ -119,7 +121,27 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
     );
 
     if (transmit_len <= 0) {
-        uart_send_string_blocking(USART_0, "Failed to serialize MQTT PUBLISH packet.\n");
+        uart_send_string_blocking(USART_0, "Failed to serialize mqtt publish packet.\n");
+        return WIFI_ERROR_RECEIVING_GARBAGE;
+    }
+
+    return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
+}
+
+WIFI_ERROR_MESSAGE_t mqtt_subscribe( char *topic, int dup_flag, int qos_flag )
+{
+    short packet_id = 1;
+
+    char transmit_buf[300];
+    int transmit_buflen = sizeof(transmit_buf);
+
+    int transmit_len = create_subscribe_packet(
+        topic, transmit_buf, transmit_buflen,
+        dup_flag, packet_id, 1, qos_flag 
+    );
+
+    if (transmit_len <= 0) {
+        uart_send_string_blocking(USART_0, "Failed to serialize mqtt subscribe packet.\n");
         return WIFI_ERROR_RECEIVING_GARBAGE;
     }
 
@@ -163,6 +185,27 @@ static int create_publish_packet (
 
 }
 
+static int create_subscribe_packet( char *topic, char *buf, int buflen, int dup_flag, short packet_id, int count, int qos )
+{
+    MQTTString topicString = MQTTString_initializer;
+
+    topicString.cstring = topic;
+
+    MQTTString topicStrings[] = { topicString };
+
+    int requestedQoSs[] = { qos };
+
+    int len = 0;
+
+    len = MQTTSerialize_subscribe (
+        buf, buflen, dup_flag, packet_id, count, topicStrings, requestedQoSs
+    );
+
+    return len;
+}
+
+// method implementations for receiving data
+
 static void clear_received_message_buf() 
 {
 
@@ -171,8 +214,8 @@ static void clear_received_message_buf()
     
 }
 
-WIFI_TCP_Callback_t callback_when_message_received() 
-{
+static void process_single_packet( unsigned char packet_type, char* buf, int len ) {
+
     // connack flags
     unsigned char sessionPresent;
     unsigned char connack_rc;
@@ -186,31 +229,48 @@ WIFI_TCP_Callback_t callback_when_message_received()
     unsigned char *payload;
     int payloadLen;
 
-    unsigned char packet_type = mqtt_received_message_buf[0] >> 4;
+    // for (int i = 0; i < MQTT_RECEIVED_MESSAGE_BUF_SIZE; i++) {
+    //     char hexbyte[4];
+    //     sprintf(hexbyte, "%02X ", mqtt_received_message_buf[i]);
+    //     uart_send_string_blocking(USART_0, hexbyte);
+    // }
+    // uart_send_string_blocking(USART_0, "\n");
 
     switch ( packet_type ) 
     {
 
     case CONNACK:
 
-        if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, mqtt_received_message_buf, MQTT_RECEIVED_MESSAGE_BUF_SIZE) == 1 ) {
+        if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
             uart_send_string_blocking( USART_0, "connack received!\n" );
 
-            char session_present_message[40];
-            sprintf( session_present_message, "session present (packet flag): %d\n", sessionPresent );
-            uart_send_string_blocking( USART_0, session_present_message);
-            
-            char return_code_message[20];
-            sprintf( return_code_message, "return code: %d\n", connack_rc );
-            uart_send_string_blocking( USART_0, return_code_message );
+            char subscribe_topic[] = "greenhouse/control/light";
+            mqtt_subscribe( subscribe_topic, 0, 1 );
+
         } else {
+
             uart_send_string_blocking( USART_0, "connack is wrong!\n");
+
         }
 
     break;
 
+    case SUBACK:
+
+        uart_send_string_blocking( USART_0, "subscription acknowledgement received!\n" );
+
+    break;
+
+    case PUBACK:
+
+        uart_send_string_blocking( USART_0, "publish acknowledgement received!\n" );
+
+    break;
+
     case PINGRESP:
-        uart_send_string_blocking( USART_0, "pingresp received!\n" );
+
+        uart_send_string_blocking( USART_0, "ping response received!\n" );
+
     break;
 
     case PUBLISH:
@@ -218,29 +278,58 @@ WIFI_TCP_Callback_t callback_when_message_received()
         if( MQTTDeserialize_publish( 
             &dup, &qos, &retained, &packetId, 
             &topic, &payload, &payloadLen,
-            mqtt_received_message_buf, MQTT_RECEIVED_MESSAGE_BUF_SIZE 
+            buf, len
         ) == 1 )
         {
+
             uart_send_string_blocking( USART_0, "publish received!\n" );
 
-            char publish_topic_message[100];
-            sprintf( publish_topic_message, "topic of the publish '%.*s'\n", topic.lenstring.len, topic.lenstring.data );
-            uart_send_string_blocking( USART_0, publish_topic_message);
+        }
+        else {
 
-            char publish_payload_message[200];
-            sprintf( publish_payload_message, "payload of the publish: %.*s\n", payloadLen, payload );
-            uart_send_string_blocking( USART_0, publish_payload_message);
+            uart_send_string_blocking(USART_0, "publish packet parse failed!\n");
 
         }
 
-
-        uart_send_string_blocking( USART_0, "publish received!\n" );
     break;
     
     default:
-        
+
+        uart_send_string_blocking( USART_0, "unrecognized packet or some other garbo received...\n" );
+
     break;
 
+    }
+}
+
+WIFI_TCP_Callback_t callback_when_message_received() 
+{
+
+    //     for (int i = 0; i < MQTT_RECEIVED_MESSAGE_BUF_SIZE; i++) {
+    //     char hexbyte[4];
+    //     sprintf(hexbyte, "%02X ", mqtt_received_message_buf[i]);
+    //     uart_send_string_blocking(USART_0, hexbyte);
+    // }
+    // uart_send_string_blocking(USART_0, "\n");
+
+    int pos = 0;
+    int total_bytes_received = strlen(mqtt_received_message_buf);
+
+    while (pos < total_bytes_received) {
+        unsigned char packet_type = mqtt_received_message_buf[pos] >> 4;
+
+        int rem_len;
+        int consumed_bytes = MQTTPacket_decodeBuf( &mqtt_received_message_buf[pos], &rem_len );
+
+        int packet_total_len = 1 + consumed_bytes + rem_len;
+
+        process_single_packet( packet_type, &mqtt_received_message_buf[pos], packet_total_len);
+
+        pos += packet_total_len;
+
+        // char hexbyte[5];
+        // sprintf(hexbyte, "%02X ", pos);
+        // uart_send_string_blocking(USART_0, hexbyte);
     }
 
     clear_received_message_buf();
