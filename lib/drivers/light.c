@@ -65,5 +65,9 @@ uint32_t timeout = 40000;//if 2cc for incrementing and evaluation the timeout is
     uint16_t adc_value = ADCL;
     adc_value |= (ADCH << 8);
 
-    return 1024 - adc_value;
+    return 1023 - adc_value;
+}
+uint8_t light_get_percentage(void) {
+    uint16_t raw = light_read();
+    return (raw * 100) / 1023;   
 }
