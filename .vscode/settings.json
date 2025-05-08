@@ -6,6 +6,7 @@
         "mqttpacket.h": "c",
         "mqttformat.h": "c",
         "mqttsubscribe.h": "c",
-        "mqtt.h": "c"
+        "mqtt.h": "c",
+        "time.h": "c"
     }
 }

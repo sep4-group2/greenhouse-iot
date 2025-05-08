@@ -235,27 +235,17 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     unsigned char *payload;
     int payloadLen;
 
-    // for (int i = 0; i < MQTT_RECEIVED_MESSAGE_BUF_SIZE; i++) {
-    //     char hexbyte[4];
-    //     sprintf(hexbyte, "%02X ", mqtt_received_message_buf[i]);
-    //     uart_send_string_blocking(USART_0, hexbyte);
-    // }
-    // uart_send_string_blocking(USART_0, "\n");
-
     switch ( packet_type ) 
     {
 
     case CONNACK:
 
         if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
-            // uart_send_string_blocking( USART_0, "connack received!\n" );
 
             char subscribe_topic[] = "greenhouse/control/light";
             mqtt_subscribe( subscribe_topic, 0, 0 );
 
         } else {
-
-            // uart_send_string_blocking( USART_0, "connack is wrong!\n");
 
         }
 
@@ -263,19 +253,13 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
     case SUBACK:
 
-        // uart_send_string_blocking( USART_0, "subscription acknowledgement received!\n" );
-
     break;
 
     case PUBACK:
 
-        // uart_send_string_blocking( USART_0, "publish acknowledgement received!\n" );
-
     break;
 
     case PINGRESP:
-
-        // uart_send_string_blocking( USART_0, "ping response received!\n" );
 
     break;
 
@@ -293,15 +277,11 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
         }
         else {
 
-            // uart_send_string_blocking(USART_0, "publish packet parse failed!\n");
-
         }
 
     break;
     
     default:
-
-        // uart_send_string_blocking( USART_0, "unrecognized packet or some other garbo received...\n" );
 
     break;
 
