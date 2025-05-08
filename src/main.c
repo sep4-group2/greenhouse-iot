@@ -7,6 +7,8 @@
 #include <avr/interrupt.h>
 #include "light.h"
 #include "display.h"
+#include "pump.h"
+#include "Buttons.h"
 
 static uint8_t _buff[100];
 static uint8_t _index = 0;
@@ -33,26 +35,44 @@ void console_rx(uint8_t _rx)
 
 int main()
 {
-    char welcome_text[] = "Welcome from SEP4 IoT hardware!\n";
-    char prompt_text[] = "Type text to send: ";
+    // char welcome_text[] = "Welcome from SEP4 IoT hardware!\n";
+    // char prompt_text[] = "Type text to send: ";
 
     uart_init(USART_0, 9600, console_rx);
-    wifi_init();
-    light_init();
-    display_init();
+    // wifi_init();
+    // light_init();
+    // display_init();
+
+    pump_init();
+    buttons_init();
 
     sei();
 
+    // pump_on();
+
+    // _delay_ms(5000);
+
+    // pump_off();
+
+
     while(1)
     {
-        uint8_t brightness = light_get_percentage();
+        if( 1 == buttons_1_pressed() ){
+            pump_on();
+        }
+        if( 1 == buttons_2_pressed() ){
+            pump_off();
+        }
+    _delay_us(500);
+
+        // uint8_t brightness = light_get_percentage();
 
         //char temp[20];
         //sprintf(temp, "light: %d percent", brightness);
 
         //uart_send_string_blocking(USART_0,temp );
        // uint16_t brightness = light_read();
-        display_int(brightness); 
+        // display_int(brightness); 
        // _delay_ms(1);
     }
     return 0;
