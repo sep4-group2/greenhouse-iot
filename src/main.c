@@ -9,31 +9,12 @@
 #include "mqtt.h"
 #include "periodic_task.h"
 #include "light.h"
+#include "leds.h"
 #include "dht11.h"
 #include "soil.h"
 
-// static uint8_t _buff[100];
-// static uint8_t _index = 0;
-// volatile static bool _done = false;
-// void console_rx(uint8_t _rx)
-// {
-//     uart_send_blocking(USART_0, _rx);
-//     if(('\r' != _rx) && ('\n' != _rx))
-//     {
-//         if(_index < 100-1)
-//         {
-//             _buff[_index++] = _rx;
-//         }
-//     }
-//     else
-//     {
-//         _buff[_index] = '\0';
-//         _index = 0;
-//         _done = true;
-//         uart_send_blocking(USART_0, '\n');
-// //        uart_send_string_blocking(USART_0, (char*)_buff);
-//     }
-// }
+extern volatile bool mqtt_publish_ready;
+extern volatile char mqtt_publish_buffer[128];
 
 void loop(){
 
@@ -61,6 +42,7 @@ int main()
     light_init();
     dht11_init();
     soil_init();
+    leds_init();
 
     sei();
 
@@ -87,14 +69,34 @@ int main()
 
     while(1){
 
-        // char time_message[70];
+        if(mqtt_publish_ready){
+            if( strcmp( mqtt_publish_buffer, "ON" ) == 0 )
+            {
+                for (uint16_t i = 0; i < 128; i++)
+                    mqtt_publish_buffer[i] = '\0';
+                leds_turnOn(2);
+                mqtt_publish_ready = false;
+                uart_send_string_blocking(USART_0, "got publish: ON\n");
 
-        // time_t t = time(NULL);
-        // struct tm tm = *localtime(&t);
-        // sprintf(time_message, "now: %s-%02s-%02s %02s:%02s:%02s\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-        // uart_send_string_blocking(USART_0, time_message);
+            }
+            else if( strcmp( mqtt_publish_buffer, "OFF" ) == 0 )
+            {
+                for (uint16_t i = 0; i < 128; i++)
+                    mqtt_publish_buffer[i] = '\0';
+                leds_turnOff(2);
+                mqtt_publish_ready = false;
+                uart_send_string_blocking(USART_0, "got publish: OFF\n");
 
-        // _delay_ms(200);
+            }
+            else 
+            {
+                for (uint16_t i = 0; i < 128; i++)
+                    mqtt_publish_buffer[i] = '\0';
+                uart_send_string_blocking(USART_0, "got garbage publish\n");
+                mqtt_publish_ready = false;
+
+            }
+        }
     }
 
     return 0;

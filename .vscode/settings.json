@@ -7,6 +7,10 @@
         "mqttformat.h": "c",
         "mqttsubscribe.h": "c",
         "mqtt.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "string.h": "c",
+        "stdbool.h": "c",
+        "leds.h": "c",
+        "light.h": "c"
     }
 }

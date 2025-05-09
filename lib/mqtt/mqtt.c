@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "wifi.h"
 #include "uart.h"
@@ -7,20 +8,20 @@
 #include "MQTTPacket.h"
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
+volatile bool mqtt_publish_ready = false;
+volatile char mqtt_publish_buffer[128];
 
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
 int mqtt_received_message_length;
-
-WIFI_TCP_Callback_t callback_when_message_received();
-static void process_single_packet( unsigned char packet_type, char* buf, int len );
-
-static void clear_received_message_buf();
 
 static int create_connect_packet ( unsigned char *buf, int buflen, char *client_id );
 static int create_publish_packet ( 
     char *topic, char *payload, char *buf, int buflen,
     int dup_flag, int qos_flag, int retained_flag, short packet_id );
 static int create_subscribe_packet ( char *topic, char *buf, int buflen, int dup_flag, short packet_id, int count, int qos );
+static void process_single_packet( unsigned char packet_type, char* buf, int len );
+static void clear_received_message_buf();
+WIFI_TCP_Callback_t callback_when_message_received();
 
 // code implementations
 
@@ -272,8 +273,9 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
         ) == 1 )
         {
 
-            uart_send_string_blocking( USART_0, "publish received!\n" );
-
+            strcpy( mqtt_publish_buffer, payload );
+            mqtt_publish_ready = true;
+            
         }
         else {
 
