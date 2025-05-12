@@ -96,7 +96,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_ip_from_URL(char * url, char *ip_address);
  * @param received_message_buffer Buffer to hold the received message.
  * @return WIFI_ERROR_MESSAGE_t Error message based on the response from the module.
  */
-WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer);
+WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, int *received_message_length );
 
 /**
  * @brief Transmit data over an established TCP connection.
