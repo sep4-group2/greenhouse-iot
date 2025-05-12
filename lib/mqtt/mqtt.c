@@ -4,13 +4,15 @@
 
 #include "wifi.h"
 #include "uart.h"
+#include "mqtt_topics.h"
+#include "mqtt_received_publish.h"
 
 #include "MQTTPacket.h"
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
-volatile bool mqtt_publish_ready = false;
-volatile unsigned char mqtt_received_publish_payload[512];
-volatile unsigned char mqtt_received_publish_topic[512];
+
+volatile mqtt_received_publish_t mqtt_received_publish_array[10];
+volatile int mqtt_received_publish_array_last = -1;
 volatile int mqtt_received_publish_payload_len;
 
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
@@ -20,7 +22,7 @@ static int create_connect_packet ( unsigned char *buf, int buflen, char *client_
 static int create_publish_packet ( 
     char *topic, char *payload, char *buf, int buflen,
     int dup_flag, int qos_flag, int retained_flag, short packet_id );
-static int create_subscribe_packet ( char *topic, char *buf, int buflen, int dup_flag, short packet_id, int count, int qos );
+static int create_subscribe_packet ( mqtt_topics_t topics, char *buf, int buflen, int dup_flag, short packet_id, int qos[] );
 static void process_single_packet( unsigned char packet_type, char* buf, int len );
 static void clear_received_message_buf();
 WIFI_TCP_Callback_t callback_when_message_received();
@@ -137,7 +139,7 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
     return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
-WIFI_ERROR_MESSAGE_t mqtt_subscribe( char *topic, int dup_flag, int qos_flag )
+WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos_flags[] )
 {
     short packet_id = 1;
 
@@ -145,8 +147,8 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( char *topic, int dup_flag, int qos_flag )
     int transmit_buflen = sizeof(transmit_buf);
 
     int transmit_len = create_subscribe_packet(
-        topic, transmit_buf, transmit_buflen,
-        dup_flag, packet_id, 1, qos_flag 
+        topics, transmit_buf, transmit_buflen,
+        dup_flag, packet_id, qos_flags 
     );
 
     if (transmit_len <= 0) {
@@ -194,20 +196,25 @@ static int create_publish_packet (
 
 }
 
-static int create_subscribe_packet( char *topic, char *buf, int buflen, int dup_flag, short packet_id, int count, int qos )
+static int create_subscribe_packet( mqtt_topics_t topics, char *buf, int buflen, int dup_flag, short packet_id, int qos[] )
 {
-    MQTTString topicString = MQTTString_initializer;
 
-    topicString.cstring = topic;
+    int count = mqtt_topics_get_topic_count( topics );
+    char** topics_strings = mqtt_topics_get_topics( topics );
+    MQTTString topics_to_subscribe[count];
 
-    MQTTString topicStrings[] = { topicString };
+    for (size_t i = 0; i < count; i++)
+    {
+        MQTTString topicString = MQTTString_initializer;
+        topicString.cstring = topics_strings[i];
 
-    int requestedQoSs[] = { qos };
+        topics_to_subscribe[i] = topicString;
+    }
 
     int len = 0;
 
     len = MQTTSerialize_subscribe (
-        buf, buflen, dup_flag, packet_id, count, topicStrings, requestedQoSs
+        buf, buflen, dup_flag, packet_id, count, topics_to_subscribe, qos
     );
 
     return len;
@@ -245,8 +252,12 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
         if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
 
-            char subscribe_topic[] = "greenhouse/control/light";
-            mqtt_subscribe( subscribe_topic, 0, 0 );
+            char *subscribe_topic[] = { "greenhouse/control/light", "greenhouse/control/watering" };
+
+            mqtt_topics_t topics = mqtt_topics_init( subscribe_topic, 2);
+            int qos[] = { 1, 1 };
+
+            mqtt_subscribe( topics, 0, qos );
 
         } else {
 
@@ -255,7 +266,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     break;
 
     case SUBACK:
-
+        
     break;
 
     case PUBACK:
@@ -275,16 +286,20 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
         ) == 1 )
         {
 
-            
             char *topic_copy = malloc(topic.lenstring.len + 1);
             if (topic_copy != NULL) {
                 memcpy(topic_copy, topic.lenstring.data, topic.lenstring.len);
                 topic_copy[topic.lenstring.len] = '\0';
             }
 
-            strcpy( mqtt_received_publish_payload, payload ); 
-            strcpy( mqtt_received_publish_topic, topic_copy ); 
-            mqtt_publish_ready = true;
+            mqtt_received_publish_t received_message = mqtt_received_publish_init( payload, mqtt_received_publish_payload_len, topic_copy, topic.lenstring.len );
+            mqtt_received_publish_array[++mqtt_received_publish_array_last] = received_message;
+
+            if (qos == 1) {
+                unsigned char puback_buf[50];
+                int puback_buf_len = MQTTSerialize_puback(puback_buf, sizeof(puback_buf), packetId);
+                wifi_command_TCP_transmit(puback_buf, puback_buf_len);
+            }
             
         }
         else {
@@ -306,19 +321,22 @@ WIFI_TCP_Callback_t callback_when_message_received()
     int pos = 0;
     int total_bytes_received = mqtt_received_message_length;
 
-    while (pos < total_bytes_received) {
+    while (pos < total_bytes_received)
+    {
+        if ((pos + 1) >= total_bytes_received) break;
 
         unsigned char packet_type = mqtt_received_message_buf[pos] >> 4;
 
         int rem_len;
-        int consumed_bytes = MQTTPacket_decodeBuf( &mqtt_received_message_buf[pos + 1], &rem_len );
+        int consumed_bytes = MQTTPacket_decodeBuf(&mqtt_received_message_buf[pos + 1], &rem_len);
 
         int packet_total_len = 1 + consumed_bytes + rem_len;
 
-        process_single_packet( packet_type, &mqtt_received_message_buf[pos], packet_total_len);
+        if ((pos + packet_total_len) > total_bytes_received) break;
+
+        process_single_packet(packet_type, &mqtt_received_message_buf[pos], packet_total_len);
 
         pos += packet_total_len;
-
     }
 
     clear_received_message_buf();
