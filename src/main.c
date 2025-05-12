@@ -14,7 +14,9 @@
 #include "soil.h"
 
 extern volatile bool mqtt_publish_ready;
-extern volatile char mqtt_publish_buffer[128];
+extern volatile unsigned char mqtt_received_publish_payload[512];
+extern volatile unsigned char mqtt_received_publish_topic[512];
+extern volatile int mqtt_received_publish_payload_len;
 
 void loop(){
 
@@ -52,7 +54,7 @@ int main()
     int port = 1883;
     char *client_id = "client1";
 
-    WIFI_ERROR_MESSAGE_t mqtt_result = mqtt_connect( ssid, password, ip, port, client_id );
+    mqtt_connect( ssid, password, ip, port, client_id );
 
     // if(mqtt_result != WIFI_OK)
     // {
@@ -70,32 +72,68 @@ int main()
     while(1){
 
         if(mqtt_publish_ready){
-            if( strcmp( mqtt_publish_buffer, "ON" ) == 0 )
-            {
-                for (uint16_t i = 0; i < 128; i++)
-                    mqtt_publish_buffer[i] = '\0';
-                leds_turnOn(2);
-                mqtt_publish_ready = false;
-                uart_send_string_blocking(USART_0, "got publish: ON\n");
+
+            char *topic = strstr( mqtt_received_publish_topic, "/" );
+            topic = strstr( ++topic, "/" );
+            topic++;
+
+            if( strcmp( topic, "light" ) == 0 ){
+
+                if( strcmp( mqtt_received_publish_payload, "ON" ) == 0 )
+                {
+                    
+                    leds_turnOn(2);
+                    mqtt_publish_ready = false;
+                    uart_send_string_blocking(USART_0, "light: ON\n");
+
+                }
+                else if( strcmp( mqtt_received_publish_payload, "OFF" ) == 0 )
+                {
+
+                    leds_turnOff(2);
+                    mqtt_publish_ready = false;
+                    uart_send_string_blocking(USART_0, "light: OFF\n");
+
+                }
+                else 
+                {
+
+                    uart_send_string_blocking(USART_0, "got garbage publish\n");
+                    mqtt_publish_ready = false;
+
+                }
 
             }
-            else if( strcmp( mqtt_publish_buffer, "OFF" ) == 0 )
-            {
-                for (uint16_t i = 0; i < 128; i++)
-                    mqtt_publish_buffer[i] = '\0';
-                leds_turnOff(2);
-                mqtt_publish_ready = false;
-                uart_send_string_blocking(USART_0, "got publish: OFF\n");
+            if( strcmp( mqtt_received_publish_topic, "watering" ) == 0 ){
 
-            }
-            else 
-            {
-                for (uint16_t i = 0; i < 128; i++)
-                    mqtt_publish_buffer[i] = '\0';
-                uart_send_string_blocking(USART_0, "got garbage publish\n");
-                mqtt_publish_ready = false;
+                if( strcmp( mqtt_received_publish_payload, "ON" ) == 0 )
+                {
+                    
+                    leds_turnOn(2);
+                    mqtt_publish_ready = false;
+                    uart_send_string_blocking(USART_0, "water: ON\n");
 
+                }
+                else if( strcmp( mqtt_received_publish_payload, "OFF" ) == 0 )
+                {
+
+                    leds_turnOff(2);
+                    mqtt_publish_ready = false;
+                    uart_send_string_blocking(USART_0, "water: OFF\n");
+
+                }
+                else 
+                {
+
+                    uart_send_string_blocking(USART_0, "got garbage publish\n");
+                    mqtt_publish_ready = false;
+
+                }
+                
             }
+
+            
+
         }
     }
 
