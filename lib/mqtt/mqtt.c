@@ -9,7 +9,9 @@
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
 volatile bool mqtt_publish_ready = false;
-volatile char mqtt_publish_buffer[128];
+volatile unsigned char mqtt_received_publish_payload[512];
+volatile unsigned char mqtt_received_publish_topic[512];
+volatile int mqtt_received_publish_payload_len;
 
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
 int mqtt_received_message_length;
@@ -233,8 +235,8 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     unsigned char retained;
     unsigned short packetId;
     MQTTString topic;
-    unsigned char *payload;
-    int payloadLen;
+    unsigned char* payload;
+
 
     switch ( packet_type ) 
     {
@@ -268,12 +270,20 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
         if( MQTTDeserialize_publish( 
             &dup, &qos, &retained, &packetId, 
-            &topic, &payload, &payloadLen,
+            &topic, &payload, &mqtt_received_publish_payload_len,
             buf, len
         ) == 1 )
         {
 
-            strcpy( mqtt_publish_buffer, payload );
+            
+            char *topic_copy = malloc(topic.lenstring.len + 1);
+            if (topic_copy != NULL) {
+                memcpy(topic_copy, topic.lenstring.data, topic.lenstring.len);
+                topic_copy[topic.lenstring.len] = '\0';
+            }
+
+            strcpy( mqtt_received_publish_payload, payload ); 
+            strcpy( mqtt_received_publish_topic, topic_copy ); 
             mqtt_publish_ready = true;
             
         }
