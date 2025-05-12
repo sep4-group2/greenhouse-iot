@@ -39,9 +39,7 @@ void loop(){
 
 int main()
 {
-    char welcome_text[] = "Welcome from SEP4 IoT hardware!\n";
-    char prompt_text[] = "Type text to send: ";
-
+    
     mqtt_init();
     light_init();
     dht11_init();
