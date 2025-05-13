@@ -11,6 +11,9 @@
 #include "soil.h"
 #include "avr/io.h"
 
+#define SOIL_DRY 480
+#define SOIL_WET 180
+
 /**
  * @brief Initialize ADC for Soil Moisture sensor
  *
@@ -56,5 +59,10 @@ uint16_t soil_read()
     // Read the 10-bit ADC value
     uint16_t adc_value = ADC;
 
-    return 1023 - adc_value;
+    float percentage = 100.0 * (adc_value - SOIL_WET) / (SOIL_DRY - SOIL_WET);
+
+    if( 0.0 > percentage ) percentage = 0.0;
+    else if( 100.0 < percentage ) percentage = 100.0;
+
+    return 100.0 - percentage;
 }

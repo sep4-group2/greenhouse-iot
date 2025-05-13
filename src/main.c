@@ -15,6 +15,8 @@
 #include "leds.h"
 #include "dht11.h"
 #include "soil.h"
+#include "pump.h"
+
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
 
@@ -36,13 +38,16 @@ void loop(){
     char payload[90] = "";
     sprintf(payload, "{\"air_temperature\":%d,\"air_humidity\":%d,\"soil_humidity\":%d,\"light_level\":%d}", temperature_int, humidity_int, soil_humidity, light_int);
 
+    if( 50 > soil_humidity )   pump_on();
+    else    pump_off();
+
     mqtt_publish( topic, payload, 0, 0, 0 );
 
 }
 
 int main()
 {
-    
+
     uart_init( USART_0, 9600, NULL );
     wifi_init();
 
@@ -62,6 +67,7 @@ int main()
     soil_init();
     leds_init();
     light_init();
+    pump_init();
     display_init();
 
     sei();
@@ -85,7 +91,7 @@ int main()
 
     // _delay_ms(500); 
 
-    periodic_task_init_a( loop, 10000 );
+    periodic_task_init_a( loop, 5000 );
 
     while(1){
 
@@ -106,8 +112,8 @@ int main()
                 else if (strcmp(temp_payload, "OFF") == 0) leds_turnOff(2);
                 else uart_send_string_blocking(USART_0, "1\n");
             } else if (strcmp(topic, "watering") == 0) {
-                if (strcmp(temp_payload, "ON") == 0) leds_turnOn(3);
-                else if (strcmp(temp_payload, "OFF") == 0) leds_turnOff(3);
+                if (strcmp(temp_payload, "ON") == 0) pump_off();
+                else if (strcmp(temp_payload, "OFF") == 0) pump_on();
                 else uart_send_string_blocking(USART_0, "2\n");
             } else {
                 uart_send_string_blocking(USART_0, "3\n");
