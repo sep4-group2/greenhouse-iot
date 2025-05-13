@@ -214,6 +214,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_close_TCP_connection()
 #define PREFIX_LENGTH 5
 
 WIFI_TCP_Callback_t callback_when_message_received_static;
+int *received_message_length_static;
 char *received_message_buffer_static_pointer;
 void static wifi_TCP_callback(uint8_t byte)
 {
@@ -262,24 +263,31 @@ void static wifi_TCP_callback(uint8_t byte)
             if(index == length) {
                 // message is complete, null terminate the string
                 received_message_buffer_static_pointer[index] = '\0';
+                if(NULL != received_message_length_static) {
+                    *received_message_length_static = length;
+                }
 
                 // reset to IDLE
                 state = IDLE;
                 length = 0;
                 index = 0;
 
-            wifi_clear_databuffer_and_index();
-            callback_when_message_received_static();
+                wifi_clear_databuffer_and_index();
+                if (callback_when_message_received_static != NULL)
+                {
+                    callback_when_message_received_static();
+                }
             }
             break;
     }
   
 }
 
-WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer)
+WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, int *received_message_length )
 {
     received_message_buffer_static_pointer = received_message_buffer;
     callback_when_message_received_static = callback_when_message_received;
+    received_message_length_static = received_message_length;
     char sendbuffer[128];
     char portString[7];
 
@@ -313,4 +321,53 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
     
 uart_send_array_blocking(USART_WIFI, data,  length);
 return WIFI_OK;
+}
+
+
+
+
+
+WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
+{
+    char sendbuffer[] = "AT+CIFSR";
+    uint16_t timeOut_s = 5;
+
+    UART_Callback_t callback_state = uart_get_rx_callback(USART_WIFI);
+    uart_init(USART_WIFI, wifi_baudrate, wifi_command_callback);
+
+    uart_send_string_blocking(USART_WIFI, strcat(sendbuffer, "\r\n"));
+
+    for (uint16_t i = 0; i < timeOut_s * 100UL; i++) {
+        _delay_ms(10);
+        if (strstr((char *)wifi_dataBuffer, "OK\r\n") != NULL)
+            break;
+    }
+
+    WIFI_ERROR_MESSAGE_t error;
+
+    if (wifi_dataBufferIndex == 0)
+        error = WIFI_ERROR_NOT_RECEIVING;
+    else if (strstr((char *)wifi_dataBuffer, "OK") != NULL)
+        error = WIFI_OK;
+    else if (strstr((char *)wifi_dataBuffer, "ERROR") != NULL)
+        error = WIFI_ERROR_RECEIVED_ERROR;
+    else if (strstr((char *)wifi_dataBuffer, "FAIL") != NULL)
+        error = WIFI_FAIL;
+    else
+        error = WIFI_ERROR_RECEIVING_GARBAGE;
+
+    // Extraer MAC
+    char *macStart = strstr((char *)wifi_dataBuffer, "+CIFSR:STAMAC,\"");
+    if (macStart != NULL) {
+        macStart += strlen("+CIFSR:STAMAC,\"");
+        char *macEnd = strchr(macStart, '"');
+        if (macEnd != NULL && (macEnd - macStart) < 18) {
+            strncpy(mac_buffer, macStart, macEnd - macStart);
+            mac_buffer[macEnd - macStart] = '\0';
+        }
+    }
+
+    wifi_clear_databuffer_and_index();
+    uart_init(USART_WIFI, wifi_baudrate, callback_state);
+    return error;
 }
