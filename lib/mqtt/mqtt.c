@@ -252,10 +252,14 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
         if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
 
-            char *subscribe_topic[] = { "greenhouse/control/light", "greenhouse/control/watering" };
+            char *subscribe_topic[] = { 
+                "greenhouse/control/light", 
+                "greenhouse/control/watering", 
+                "greenhouse/control/preset" 
+            };
 
-            mqtt_topics_t topics = mqtt_topics_init( subscribe_topic, 2);
-            int qos[] = { 1, 1 };
+            mqtt_topics_t topics = mqtt_topics_init( subscribe_topic, 3);
+            int qos[] = { 1, 1, 1 };
 
             mqtt_subscribe( topics, 0, qos );
 

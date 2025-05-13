@@ -16,6 +16,8 @@
         "stdint.h": "c",
         "wifi.h": "c",
         "mqtt_topics.h": "c",
-        "mqtt_received_publish.h": "c"
+        "mqtt_received_publish.h": "c",
+        "stdio.h": "c",
+        "delay.h": "c"
     }
 }

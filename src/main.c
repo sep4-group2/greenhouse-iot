@@ -23,6 +23,18 @@
 extern volatile mqtt_received_publish_t mqtt_received_publish_array[10];
 extern volatile int mqtt_received_publish_array_last;
 
+char *extract_substring( char *start, char *end ) {
+    size_t len = end - start;
+    char *substr = malloc(len + 1);
+
+    if (!substr) return NULL;
+
+    memcpy(substr, start, len);
+    substr[len] = '\0';
+
+    return substr;
+}
+
 void loop(){
 
     char *topic = "greenhouse/sensors";
@@ -47,19 +59,19 @@ void loop(){
 
 int main()
 {
+    
+    // uart_init( USART_0, 9600, NULL );
+    // wifi_init();
 
-    uart_init( USART_0, 9600, NULL );
-    wifi_init();
+    // _delay_ms(4000);
 
-    _delay_ms(4000);
+    // char mac_buf[18];
+    // char temp[50];
+    // wifi_command_get_MAC(mac_buf);
+    // sprintf(temp, "mac: %s\n", mac_buf);
+    // uart_send_string_blocking(USART_0, temp);
 
-    char mac_buf[18];
-    char temp[50];
-    wifi_command_get_MAC(mac_buf);
-    sprintf(temp, "mac: %s\n", mac_buf);
-    uart_send_string_blocking(USART_0, temp);
-
-    _delay_ms(1000);
+    // _delay_ms(1000);
 
     mqtt_init();
     light_init();
@@ -108,13 +120,33 @@ int main()
             topic++;
             
             if (strcmp(topic, "light") == 0) {
+
                 if (strcmp(temp_payload, "ON") == 0) leds_turnOn(2);
                 else if (strcmp(temp_payload, "OFF") == 0) leds_turnOff(2);
                 else uart_send_string_blocking(USART_0, "1\n");
+
             } else if (strcmp(topic, "watering") == 0) {
-                if (strcmp(temp_payload, "ON") == 0) pump_off();
-                else if (strcmp(temp_payload, "OFF") == 0) pump_on();
+
+                if (strcmp(temp_payload, "ON") == 0) leds_turnOn(3);
+                else if (strcmp(temp_payload, "OFF") == 0) leds_turnOff(3);
                 else uart_send_string_blocking(USART_0, "2\n");
+
+            } else if (strcmp(topic, "preset") == 0) {
+
+                char *min_soil_humidity_start = strstr( temp_payload, ":" );
+                char *min_soil_humidity_end = strstr( ++min_soil_humidity_start, "." );
+                char *min_soil_humidity_char = extract_substring( min_soil_humidity_start, min_soil_humidity_end );
+                int min_soil_humidity = atoi( min_soil_humidity_char );
+
+                char *max_soil_humidity_start = strstr( min_soil_humidity_end, ":" );
+                char *max_soil_humidity_end = strstr( ++max_soil_humidity_start, "." );
+                char *max_soil_humidity_char = extract_substring( max_soil_humidity_start, max_soil_humidity_end );
+                int max_soil_humidity = atoi( max_soil_humidity_char );
+
+                char *temp_gotten[40];
+                sprintf(temp_gotten, "min: %d, max: %d\n", min_soil_humidity, max_soil_humidity);
+                uart_send_string_blocking(USART_0, temp_gotten);
+
             } else {
                 uart_send_string_blocking(USART_0, "3\n");
             }
