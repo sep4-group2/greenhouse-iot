@@ -100,6 +100,11 @@ WIFI_ERROR_MESSAGE_t wifi_command_disable_echo()
     return wifi_command("ATE0", 1);
 }
 
+WIFI_ERROR_MESSAGE_t wifi_command_enable_echo()
+{
+    return wifi_command("ATE1", 1);
+}
+
 WIFI_ERROR_MESSAGE_t wifi_command_get_ip_from_URL(char * url, char *ip_address){
     char sendbuffer[128];
     strcpy(sendbuffer, "AT+CIPDOMAIN=\"");
@@ -323,10 +328,6 @@ uart_send_array_blocking(USART_WIFI, data,  length);
 return WIFI_OK;
 }
 
-
-
-
-
 WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
 {
     char sendbuffer[] = "AT+CIFSR";
@@ -335,6 +336,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
     UART_Callback_t callback_state = uart_get_rx_callback(USART_WIFI);
     uart_init(USART_WIFI, wifi_baudrate, wifi_command_callback);
 
+    wifi_command_disable_echo();
     uart_send_string_blocking(USART_WIFI, strcat(sendbuffer, "\r\n"));
 
     for (uint16_t i = 0; i < timeOut_s * 100UL; i++) {
@@ -356,7 +358,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
     else
         error = WIFI_ERROR_RECEIVING_GARBAGE;
 
-    // Extraer MAC
+    
     char *macStart = strstr((char *)wifi_dataBuffer, "+CIFSR:STAMAC,\"");
     if (macStart != NULL) {
         macStart += strlen("+CIFSR:STAMAC,\"");
@@ -367,6 +369,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
         }
     }
 
+    wifi_command_enable_echo();
     wifi_clear_databuffer_and_index();
     uart_init(USART_WIFI, wifi_baudrate, callback_state);
     return error;

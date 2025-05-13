@@ -66,6 +66,13 @@ WIFI_ERROR_MESSAGE_t wifi_command_join_AP(char *ssid, char *password);
 WIFI_ERROR_MESSAGE_t wifi_command_disable_echo();
 
 /**
+ * @brief Enable echo from the WiFi module.
+ * 
+ * @return WIFI_ERROR_MESSAGE_t Error message based on the response from the module.
+ */
+WIFI_ERROR_MESSAGE_t wifi_command_enable_echo();
+
+/**
  * @brief Set the WiFi module to mode 1.
  * 
  * @return WIFI_ERROR_MESSAGE_t Error message based on the response from the module.

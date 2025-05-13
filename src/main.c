@@ -4,6 +4,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
+
+#include "uart.h"
+#include "wifi.h"
 #include "light.h"
 #include "display.h"
 #include "mqtt.h"
@@ -40,6 +43,19 @@ void loop(){
 int main()
 {
     
+    uart_init( USART_0, 9600, NULL );
+    wifi_init();
+
+    _delay_ms(4000);
+
+    char mac_buf[18];
+    char temp[50];
+    wifi_command_get_MAC(mac_buf);
+    sprintf(temp, "mac: %s\n", mac_buf);
+    uart_send_string_blocking(USART_0, temp);
+
+    _delay_ms(1000);
+
     mqtt_init();
     light_init();
     dht11_init();
@@ -49,13 +65,6 @@ int main()
     display_init();
 
     sei();
-
-    // pump_on();
-
-    // _delay_ms(5000);
-
-    // pump_off();
-
 
     char *ssid = "pixelphon";
     char *password = "poopdotcom";
