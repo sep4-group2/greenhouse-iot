@@ -16,6 +16,7 @@
 #include "dht11.h"
 #include "soil.h"
 #include "pump.h"
+#include "preset.h"
 
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
@@ -36,6 +37,7 @@ void loop2();
 
 int main()
 {
+    
     active_preset = preset_init();
     uart_init( USART_0, 9600, NULL );
     wifi_init();
@@ -61,7 +63,6 @@ int main()
     char *password = "poopdotcom";
     char *ip = "172.25.2.215";
     int port = 1883;
-    char *client_id = "client1";
 
     mqtt_connect( ssid, password, ip, port, mac_address );
 
@@ -76,7 +77,7 @@ int main()
 
     // _delay_ms(500); 
 
-    periodic_task_init_a( loop, 5000 );
+    periodic_task_init_a( loop1, 10000 );
 
     while(1){
 
