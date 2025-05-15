@@ -92,7 +92,6 @@ WIFI_ERROR_MESSAGE_t wifi_command_join_AP(char *ssid, char *password)
     strcat(sendbuffer, password);
     strcat(sendbuffer, "\"");
 
-    uart_send_string_blocking(USART_0, "📡 Respuesta WiFi: ");
 uart_send_string_blocking(USART_0, (char *)wifi_dataBuffer);
 
     return wifi_command(sendbuffer, 20);
@@ -361,7 +360,6 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length) 
     if (errorMessage != WIFI_OK)
         return errorMessage;
 
-    // Enviar los datos reales
     uart_send_array_blocking(USART_WIFI, data, length);
     return WIFI_OK;
 }
