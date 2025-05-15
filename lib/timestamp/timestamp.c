@@ -8,7 +8,7 @@
 
 
 
-#define HTTP_BUFFER_SIZE 256
+#define HTTP_BUFFER_SIZE 512
 
 static uint8_t hours, minutes, seconds;
 static uint8_t day, month;
