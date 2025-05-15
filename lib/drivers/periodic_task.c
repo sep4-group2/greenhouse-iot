@@ -20,6 +20,10 @@ static uint16_t ocr3a_value = 0;
 static uint16_t ocr3b_value = 0;
 static uint16_t ocr3c_value = 0;
 
+static uint16_t ocr4a_value = 0;
+static uint16_t ocr4b_value = 0;
+static uint16_t ocr4c_value = 0;
+
 static uint16_t cnt_a = 0;
 static uint16_t cnt_b = 0;
 static uint16_t cnt_c = 0;
@@ -43,13 +47,28 @@ ISR(TIMER3_COMPA_vect) {
         cnt_a--;
     }
 }
-ISR(TIMER3_COMPB_vect) {
+// ISR(TIMER3_COMPB_vect) {
+//     if (cnt_b==0)
+//     {
+//         OCR3B=OCR3B+ocr3b_value;
+//         cnt_b=loops_b;
+        
+//         user_func_b();
+//         periodic_task_disable_b();
+//     }
+//     else{
+//         cnt_b--;
+//     }
+// }
+
+ISR(TIMER4_COMPB_vect) {
     if (cnt_b==0)
     {
-        OCR3B=OCR3B+ocr3b_value;
+        OCR4B=OCR4B+ocr4b_value;
         cnt_b=loops_b;
-        user_func_b();
         
+        user_func_b();
+        periodic_task_disable_b();
     }
     else{
         cnt_b--;
@@ -82,6 +101,28 @@ static void init_timer3(){
     sei();
 }
 
+static void init_timer4(){
+// Set Timer0 to CTC (Clear Timer on Compare Match) mode
+    TCCR4A = 0;
+
+    // Set the prescaler to 1024
+    TCCR4B = (1 << CS32) | (1 << CS30);
+
+    // Enable global interrupts
+    sei();
+}
+
+static void init_timer5(){
+// Set Timer0 to CTC (Clear Timer on Compare Match) mode
+    TCCR5A = 0;
+
+    // Set the prescaler to 1024
+    TCCR5B = (1 << CS32) | (1 << CS30);
+
+    // Enable global interrupts
+    sei();
+}
+
 
 void periodic_task_init_a(void (*user_function_a)(void), uint32_t interval_ms_a) {
     user_func_a = user_function_a;
@@ -101,18 +142,48 @@ void periodic_task_init_a(void (*user_function_a)(void), uint32_t interval_ms_a)
     TIMSK3 |= (1 << OCIE3A);
 }
 
+// void periodic_task_init_b(void (*user_function_b)(void), uint32_t interval_ms_b) {
+//     user_func_b = user_function_b;
+//     init_timer3();
+
+//     cnt_b = (interval_ms_b/1000*(F_CPU/1024))/0xFFFF;//(interval_ms_a*125)>>19;
+//     loops_b=cnt_b;
+//     ocr3b_value=(uint32_t)interval_ms_b*(F_CPU/1024)/1000-(uint32_t)cnt_b*0xFFFF;
+    
+//     OCR3B = (TCNT3 + ocr3b_value) % 65536;
+
+//     // Enable Timer3 Compare Match B interrupt
+//     TIMSK3 |= (1 << OCIE3B);
+// }
+
+// void periodic_task_disable_b( ) {
+
+//     user_func_b = NULL;
+//     cnt_b = 0;
+//     TIMSK3 &= ~(1 << OCIE3B);
+
+// }
+
 void periodic_task_init_b(void (*user_function_b)(void), uint32_t interval_ms_b) {
     user_func_b = user_function_b;
-    init_timer3();
+    init_timer4();
 
     cnt_b = (interval_ms_b/1000*(F_CPU/1024))/0xFFFF;//(interval_ms_a*125)>>19;
     loops_b=cnt_b;
-    ocr3b_value=(uint32_t)interval_ms_b*(F_CPU/1024)/1000-(uint32_t)cnt_b*0xFFFF;
+    ocr4b_value=(uint32_t)interval_ms_b*(F_CPU/1024)/1000-(uint32_t)cnt_b*0xFFFF;
     
-    OCR3B = ocr3b_value;
+    OCR4B = (TCNT3 + ocr4b_value) % 65536;
 
     // Enable Timer3 Compare Match B interrupt
-    TIMSK3 |= (1 << OCIE3B);
+    TIMSK4 |= (1 << OCIE4B);
+}
+
+void periodic_task_disable_b( ) {
+
+    user_func_b = NULL;
+    cnt_b = 0;
+    TIMSK4 &= ~(1 << OCIE4B);
+
 }
 
 void periodic_task_init_c(void (*user_function_c)(void), uint32_t interval_ms_c) {
