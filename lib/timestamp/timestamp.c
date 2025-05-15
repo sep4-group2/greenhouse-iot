@@ -8,7 +8,7 @@
 
 
 
-#define HTTP_BUFFER_SIZE 512
+#define HTTP_BUFFER_SIZE 555
 
 static uint8_t hours, minutes, seconds;
 static uint8_t day, month;
@@ -71,15 +71,15 @@ bool timestamp_sync_via_http(void) {
 
     uart_send_string_blocking(USART_0, "🌐 HTTP...\n");
 
-    if (wifi_command_create_TCP_connection("neverssl.com", 80, http_response_callback, recv_buf, &recv_len) != WIFI_OK) {
+    if (wifi_command_create_TCP_connection("94.130.142.35", 80, http_response_callback, recv_buf, &recv_len) != WIFI_OK) {
         uart_send_string_blocking(USART_0, "Error TCP with site\n");
         return false;
     }
 
     const char http_request[] =
-        "GET / HTTP/1.1\r\n"
-        "Host: neverssl.com\r\n"
-        "Connection: close\r\n"
+        "GET /v1/forecast?latitude=55.67&longitude=12.56&current_weather=true HTTP/1.1\r\n"
+        "Host: api.open-meteo.com\r\n"
+        "Connection: close\r\n\r\n"
         "Cache-Control: no-cache\r\n"
         "Pragma: no-cache\r\n\r\n";
 
