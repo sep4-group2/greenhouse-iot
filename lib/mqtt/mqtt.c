@@ -11,7 +11,9 @@
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
 
-volatile mqtt_received_publish_t mqtt_received_publish_array[10];
+extern char mac_address[18];
+
+volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 volatile int mqtt_received_publish_array_last = -1;
 volatile int mqtt_received_publish_payload_len;
 
@@ -25,6 +27,7 @@ static int create_publish_packet (
 static int create_subscribe_packet ( mqtt_topics_t topics, char *buf, int buflen, int dup_flag, short packet_id, int qos[] );
 static void process_single_packet( unsigned char packet_type, char* buf, int len );
 static void clear_received_message_buf();
+static void get_topic_with_address( char *topic_dest, char *topic );
 WIFI_TCP_Callback_t callback_when_message_received();
 
 // code implementations
@@ -123,7 +126,7 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
     else
         packet_id = 0;
 
-    char transmit_buf[300];
+    char transmit_buf[1028];
     int transmit_buflen = sizeof(transmit_buf);
 
     int transmit_len = create_publish_packet(
@@ -143,7 +146,7 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos
 {
     short packet_id = 1;
 
-    char transmit_buf[300];
+    char transmit_buf[1028];
     int transmit_buflen = sizeof(transmit_buf);
 
     int transmit_len = create_subscribe_packet(
@@ -230,6 +233,16 @@ static void clear_received_message_buf()
     
 }
 
+static void get_topic_with_address( char *topic_dest, char *topic ){
+
+    char temp_topic[50] = "greenhouse/";
+    strcat(temp_topic, mac_address);
+    strcat(temp_topic, "/");
+    strcat(temp_topic, topic);
+    strcpy( topic_dest, temp_topic);
+    
+}
+
 static void process_single_packet( unsigned char packet_type, char* buf, int len ) {
 
     // connack flags
@@ -252,10 +265,22 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
         if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
 
-            char *subscribe_topic[] = { "greenhouse/control/light", "greenhouse/control/watering" };
+            char topic1[50];
+            char topic2[50];
+            char topic3[50];
 
-            mqtt_topics_t topics = mqtt_topics_init( subscribe_topic, 2);
-            int qos[] = { 1, 1 };
+            get_topic_with_address( topic1, "light" );
+            get_topic_with_address( topic2, "watering" );
+            get_topic_with_address( topic3, "preset" );
+
+            char *subscribe_topics[] = { 
+                topic1, 
+                topic2, 
+                topic3 
+            };
+
+            mqtt_topics_t topics = mqtt_topics_init( subscribe_topics, 3);
+            int qos[] = { 1, 1, 1 };
 
             mqtt_subscribe( topics, 0, qos );
 
