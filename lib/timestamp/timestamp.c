@@ -8,10 +8,11 @@
 
 
 
-#define HTTP_BUFFER_SIZE 512
+#define HTTP_BUFFER_SIZE 256
 
 static uint8_t hours, minutes, seconds;
-static uint8_t day, month, year;
+static uint8_t day, month;
+static uint16_t year;
 
 static char *resp_buf = NULL;
 static int resp_index = 0;
@@ -25,12 +26,13 @@ void timestamp_init(void) {
     hours = 0;
     minutes = 0;
     seconds = 0;
-    day = 1;
-    month = 1;
+    day = 0;
+    month = 0;
     year = 0;
 }
 
-void timestamp_set(uint8_t h, uint8_t m, uint8_t s, uint8_t d, uint8_t mo, uint8_t y) {
+void timestamp_set(uint8_t h, uint8_t m, uint8_t s, uint8_t d, uint8_t mo, uint16_t y)
+ {
     hours = h;
     minutes = m;
     seconds = s;
@@ -45,7 +47,8 @@ void timestamp_get(uint8_t *h, uint8_t *m, uint8_t *s) {
     *s = seconds;
 }
 
-void timestamp_get_date(uint8_t *d, uint8_t *mo, uint8_t *y) {
+void timestamp_get_date(uint8_t *d, uint8_t *mo, uint16_t *y)
+{
     *d = day;
     *mo = month;
     *y = year;
@@ -114,10 +117,10 @@ bool timestamp_sync_via_http(void) {
                 }
             }
 
-            timestamp_set(h, m, s, d, mo, y % 100); 
+            timestamp_set(h, m, s, d, mo, y); 
 
             char buf[64];
-            sprintf(buf, "📆 Timestamp: 20%02d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hours, minutes, seconds);
+            sprintf(buf, "📆 Timestamp: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hours, minutes, seconds);
             uart_send_string_blocking(USART_0, buf);
             return true;
         } else {
