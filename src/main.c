@@ -15,31 +15,32 @@
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
 
-extern volatile mqtt_received_publish_t mqtt_received_publish_array[10];
+extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 extern volatile int mqtt_received_publish_array_last;
 
-void loop(){
+static preset_t active_preset;
+char mac_address[18];
 
-    char *topic = "greenhouse/sensors";
+char *extract_substring( char *start, char *end );
 
-    uint8_t humidity_int, humidity_dec, temperature_int, temperature_dec;
-    uint16_t soil_humidity;
+char *extract_from_json( char *to_extract, char *json );
 
-    dht11_get(&humidity_int, &humidity_dec, &temperature_int, &temperature_dec);
+void loop1();
 
-    soil_humidity = soil_read();
-
-    uint16_t light_int = light_read();
-    char payload[90] = "";
-    sprintf(payload, "{\"air_temperature\":%d,\"air_humidity\":%d,\"soil_humidity\":%d,\"light_level\":%d}", temperature_int, humidity_int, soil_humidity, light_int);
-
-    mqtt_publish( topic, payload, 0, 0, 0 );
-
-}
+void loop2();
 
 int main()
 {
-    
+    active_preset = preset_init();
+    uart_init( USART_0, 9600, NULL );
+    wifi_init();
+
+    _delay_ms(4000);
+
+    wifi_command_get_MAC(mac_address);
+
+    _delay_ms(1000);
+
     mqtt_init();
     light_init();
     dht11_init();
@@ -56,7 +57,7 @@ int main()
     int port = 1883;
     char *client_id = "client1";
 
-    mqtt_connect( ssid, password, ip, port, client_id );
+    mqtt_connect( ssid, password, ip, port, mac_address );
 
     // if(mqtt_result != WIFI_OK)
     // {
@@ -81,18 +82,35 @@ int main()
             char* temp_topic = mqtt_received_publish_get_topic( temp );
             char* temp_payload = mqtt_received_publish_get_payload( temp );
 
-            char *topic = strstr( temp_topic, "/" );
-            topic = strstr( ++topic, "/" );
-            topic++;
+
+            while( NULL != strstr( temp_topic, "/" ) ){
+                temp_topic = strstr( temp_topic, "/" );
+                temp_topic++;
+            }
             
-            if (strcmp(topic, "light") == 0) {
-                if (strcmp(temp_payload, "ON") == 0) leds_turnOn(2);
-                else if (strcmp(temp_payload, "OFF") == 0) leds_turnOff(2);
-                else uart_send_string_blocking(USART_0, "1\n");
-            } else if (strcmp(topic, "watering") == 0) {
-                if (strcmp(temp_payload, "ON") == 0) leds_turnOn(3);
-                else if (strcmp(temp_payload, "OFF") == 0) leds_turnOff(3);
-                else uart_send_string_blocking(USART_0, "2\n");
+            if (strcmp(temp_topic, "light") == 0) {
+
+                leds_toggle(2);
+
+            } else if (strcmp(temp_topic, "watering") == 0) {
+
+                leds_toggle(3);
+
+            } else if (strcmp(temp_topic, "preset") == 0) {
+
+                char *watering_method = extract_from_json( "WateringMethod", temp_payload );
+
+                if( 0 == strcmp( watering_method, "\"manual\"" ) ) preset_set_watering_method( active_preset, ACTION_MANUAL );
+                else if( 0 == strcmp( watering_method, "\"automated\"" ) ) preset_set_watering_method( active_preset, ACTION_AUTOMATED );
+
+                char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", temp_payload );
+                int min_soil_humidity = atoi( min_soil_humidity_string );
+                preset_set_min_soil_humidity( active_preset, min_soil_humidity );
+
+                char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", temp_payload );
+                int max_soil_humidity = atoi( max_soil_humidity_string );
+                preset_set_min_soil_humidity( active_preset, max_soil_humidity );
+
             } else {
                 uart_send_string_blocking(USART_0, "3\n");
             }
@@ -100,4 +118,81 @@ int main()
     }
 
     return 0;
+}
+
+char *extract_substring( char *start, char *end ) {
+    size_t len = end - start;
+    char *substr = malloc(len + 1);
+
+    if (!substr) return NULL;
+
+    memcpy(substr, start, len);
+    substr[len] = '\0';
+
+    return substr;
+}
+
+char *extract_from_json( char *to_extract, char *json ){
+    char temp[50];
+    sprintf( temp, "\"%s\"", to_extract );
+
+    char *extracted_start = strstr( json, temp );
+    extracted_start = strstr( extracted_start, ":" );
+
+    ++extracted_start;
+    char *extracted_end;
+
+    if ( NULL != strstr( extracted_start, "," ) ) extracted_end = strstr( extracted_start, "," );
+    else extracted_end = strstr( extracted_start, "}" );
+
+    char *extracted = extract_substring( extracted_start, extracted_end );
+
+    return extracted;
+
+}
+
+void loop1(){
+
+    char *topic = "greenhouse/sensors";
+
+    uint8_t humidity_int, humidity_dec, temperature_int, temperature_dec;
+    uint16_t soil_humidity;
+
+    dht11_get(&humidity_int, &humidity_dec, &temperature_int, &temperature_dec);
+
+    soil_humidity = soil_read();
+
+    uint16_t light_int = light_get_percentage();
+    char payload[300] = "";
+    // sprintf(payload, "{\"air_temperature\":%d,\"air_humidity\":%d,\"soil_humidity\":%d,\"light_level\":%d}", temperature_int, humidity_int, soil_humidity, light_int);
+    sprintf(payload, "{\"MacAddress\":%s,\"SensorData\":[{\"Type\":\"Temperature\",\"Value\":%d,\"Unit\":\"C\",},{\"Type\":\"AirHumidity\",\"Value\":%d,\"Unit\":\"%%\",},{\"Type\":\"SoilHumidity\",\"Value\":%d,\"Unit\":\"%%\",},{\"Type\":\"Brightness\",\"Value\":%d,\"Unit\":\"%%\",}],\"Timestamp\":%s,}",
+    mac_address, temperature_int, humidity_int, soil_humidity, light_int, "2025-05-09T11:45:00Z");
+    if ( !preset_is_watering_manual( active_preset ) ){
+        int min_soil_humidity = preset_get_min_soil_humidity( active_preset );
+        int max_soil_humidity = preset_get_min_soil_humidity( active_preset );
+        if( min_soil_humidity > soil_humidity ){
+            leds_turnOn(4);
+            pump_on();
+            periodic_task_init_b( loop2, 5000 );
+        }
+        else if ( max_soil_humidity < soil_humidity ){
+            leds_turnOff(4);
+            pump_off();
+        }
+    }
+    else {
+        leds_turnOff(4);
+        pump_off();
+    }
+    
+    mqtt_publish( topic, payload, 0, 0, 0 );
+
+}
+
+void loop2(){
+
+    uart_send_string_blocking(USART_0, "stopping pump\n");
+    leds_turnOff(4);
+    pump_off();
+
 }
