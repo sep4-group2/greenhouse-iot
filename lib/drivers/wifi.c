@@ -3,7 +3,7 @@
 
 
 #include "uart.h"
-#define WIFI_DATABUFFERSIZE 128
+#define WIFI_DATABUFFERSIZE 512
 static uint8_t wifi_dataBuffer[WIFI_DATABUFFERSIZE];
 static uint8_t wifi_dataBufferIndex;
 static uint32_t wifi_baudrate;
@@ -40,7 +40,7 @@ WIFI_ERROR_MESSAGE_t wifi_command(const char *str, uint16_t timeOut_s)
     UART_Callback_t callback_state = uart_get_rx_callback(USART_WIFI);
     uart_init(USART_WIFI, wifi_baudrate, wifi_command_callback);
 
-    char sendbuffer[128];
+    char sendbuffer[512];
     strcpy(sendbuffer, str);
 
     uart_send_string_blocking(USART_WIFI, strcat(sendbuffer, "\r\n"));
@@ -309,7 +309,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port,
 }
 
 WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
-    char sendbuffer[128];
+    char sendbuffer[512];
     char portString[7];
     strcpy(sendbuffer, "AT+CIPSEND=");
     sprintf(portString, "%u", length);
