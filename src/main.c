@@ -25,6 +25,7 @@ extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 extern volatile int mqtt_received_publish_array_last;
 
 static preset_t active_preset;
+static bool water_pump_trigger = false;
 char mac_address[18];
 
 char *extract_substring( char *start, char *end );
@@ -179,17 +180,25 @@ void loop1(){
         int max_soil_humidity = preset_get_min_soil_humidity( active_preset );
         if( min_soil_humidity > soil_humidity ){
             leds_turnOn(4);
-            pump_on();
-            periodic_task_init_b( loop2, 5000 );
+            water_pump_trigger = true;
         }
         else if ( max_soil_humidity < soil_humidity ){
             leds_turnOff(4);
             pump_off();
+            water_pump_trigger = false;
         }
+
+        if(water_pump_trigger){
+            pump_on();
+            leds_turnOn(4);
+            periodic_task_init_b( loop2, 5000 );
+        }
+
     }
     else {
         leds_turnOff(4);
         pump_off();
+        water_pump_trigger = false;
     }
     
     mqtt_publish( topic, payload, 0, 0, 0 );
@@ -198,7 +207,6 @@ void loop1(){
 
 void loop2(){
 
-    uart_send_string_blocking(USART_0, "stopping pump\n");
     leds_turnOff(4);
     pump_off();
 
