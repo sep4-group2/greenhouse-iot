@@ -85,7 +85,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_join_AP(char *ssid, char *password)
     if (error != WIFI_OK)
         return error;*/
 
-    char sendbuffer[128];
+    char sendbuffer[512];
     strcpy(sendbuffer, "AT+CWJAP=\"");
     strcat(sendbuffer, ssid);
     strcat(sendbuffer, "\",\"");
@@ -106,7 +106,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_enable_echo()
 }
 
 WIFI_ERROR_MESSAGE_t wifi_command_get_ip_from_URL(char * url, char *ip_address){
-    char sendbuffer[128];
+    char sendbuffer[512];
     strcpy(sendbuffer, "AT+CIPDOMAIN=\"");
     strcat(sendbuffer, url);
     strcat(sendbuffer, "\"");
@@ -214,7 +214,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_close_TCP_connection()
 
 
 
-#define BUF_SIZE 128
+#define BUF_SIZE 512
 #define IPD_PREFIX "+IPD,"
 #define PREFIX_LENGTH 5
 
@@ -287,27 +287,41 @@ void static wifi_TCP_callback(uint8_t byte)
     }
   
 }
+static WIFI_TCP_Callback_t user_tcp_callback = NULL;
 
-WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, int *received_message_length )
+static void wifi_internal_uart_callback(unsigned char byte) {
+    wifi_TCP_callback(byte);  
+    if (user_tcp_callback) {
+        user_tcp_callback();
+    }
+}
+
+WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(
+    char *IP, 
+    uint16_t port, 
+    WIFI_TCP_Callback_t callback_when_message_received, 
+    char *received_message_buffer, 
+    int *received_message_length )
 {
     received_message_buffer_static_pointer = received_message_buffer;
-    callback_when_message_received_static = callback_when_message_received;
     received_message_length_static = received_message_length;
-    char sendbuffer[128];
+    user_tcp_callback = callback_when_message_received;
+
+    char sendbuffer[512];
     char portString[7];
 
     strcpy(sendbuffer, "AT+CIPSTART=\"TCP\",\"");
-    
     strcat(sendbuffer, IP);
     strcat(sendbuffer, "\",");
+
     sprintf(portString, "%u", port);
     strcat(sendbuffer, portString);
 
     WIFI_ERROR_MESSAGE_t errorMessage = wifi_command(sendbuffer, 20);
     if (errorMessage != WIFI_OK)
         return errorMessage;
-    else
-        uart_init(USART_WIFI, wifi_baudrate, wifi_TCP_callback);
+
+    uart_init(USART_WIFI, wifi_baudrate, wifi_internal_uart_callback); 
 
     wifi_clear_databuffer_and_index();
     return errorMessage;
@@ -320,12 +334,13 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
     sprintf(portString, "%u", length);
     strcat(sendbuffer, portString);
 
-    WIFI_ERROR_MESSAGE_t errorMessage = wifi_command(sendbuffer, 20);
+    WIFI_ERROR_MESSAGE_t errorMessage = wifi_command(sendbuffer, 10);
     if (errorMessage != WIFI_OK)
         return errorMessage;
-    
-uart_send_array_blocking(USART_WIFI, data,  length);
-return WIFI_OK;
+
+    // Enviar los datos reales
+    uart_send_array_blocking(USART_WIFI, data, length);
+    return WIFI_OK;
 }
 
 WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
@@ -373,4 +388,31 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
     wifi_clear_databuffer_and_index();
     uart_init(USART_WIFI, wifi_baudrate, callback_state);
     return error;
+}
+
+WIFI_ERROR_MESSAGE_t wifi_command_ping(const char *host) {
+    char cmd[64];
+    sprintf(cmd, "AT+PING=\"%s\"", host);
+    return wifi_command(cmd, 5); 
+}
+
+WIFI_ERROR_MESSAGE_t wifi_configure_ntp() {
+    return wifi_command("AT+CIPSNTPCFG=1,0,\"pool.ntp.org\"", 5);
+}
+
+WIFI_ERROR_MESSAGE_t wifi_get_ntp_time(char *out_buffer) {
+    UART_Callback_t prev_cb = uart_get_rx_callback(USART_WIFI);
+    uart_init(USART_WIFI, 115200, wifi_command_callback);
+
+    WIFI_ERROR_MESSAGE_t result = wifi_command("AT+CIPSNTPTIME?", 5);
+
+    if (wifi_dataBufferIndex > 0) {
+        strncpy(out_buffer, (char *)wifi_dataBuffer, WIFI_DATABUFFERSIZE - 1);
+        out_buffer[WIFI_DATABUFFERSIZE - 1] = '\0';
+    } else {
+        strcpy(out_buffer, "NO TIME FOUND");
+    }
+
+    uart_init(USART_WIFI, 115200, prev_cb);
+    return (strstr(out_buffer, "+CIPSNTPTIME:") != NULL) ? WIFI_OK : result;
 }

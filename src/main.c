@@ -20,6 +20,14 @@
 
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
+#include "timestamp.h"
+#include "clock.h"
+
+
+#include "timestamp.h"
+#include "clock.h"
+
+
 
 extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 extern volatile int mqtt_received_publish_array_last;
@@ -56,38 +64,52 @@ int main()
     light_init();
     pump_init();
     display_init();
+    timestamp_init();
+    timestamp_init();
 
     sei();
 
-    char *ssid = "pixelphon";
-    char *password = "poopdotcom";
-    char *ip = "172.25.2.215";
-    int port = 1883;
+    char *ssid = "Xiaomi 12";
+    char *password = "patty123";
+    char *mqtt_ip = "192.168.150.208";
+    int mqtt_port = 1883;
 
-    mqtt_connect( ssid, password, ip, port, mac_address );
+    if (wifi_command_set_mode_to_1() != WIFI_OK ||
+        wifi_command_disable_echo() != WIFI_OK ||
+        wifi_command_join_AP(ssid, password) != WIFI_OK) {
+        uart_send_string_blocking(USART_0, "Error WiFi\n");
+        while(1);
+    }
 
-    // if(mqtt_result != WIFI_OK)
-    // {
-    //     for (int i = 0; i < 3; ++i) {
-    //         if (mqtt_reconnect( ip, port, client_id ) == WIFI_OK)
-    //             break;
-    //         _delay_ms(1000); // Delay before retry
-    //     }
-    // }
+    if (!timestamp_sync_via_http()) {
+        uart_send_string_blocking(USART_0, "Error HTTP\n");
+    }
 
-    // _delay_ms(500); 
+    wifi_command_close_TCP_connection();
+
+    if (mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address) != WIFI_OK) {
+        uart_send_string_blocking(USART_0, "Error MQTT\n");
+        while(1);
+    }
+
+uint8_t hour = 0, minute = 0, second = 0;
+uint8_t day_ = 0, month_ = 0;
+uint16_t year_ = 0;
+
+timestamp_get(&hour, &minute, &second);
+timestamp_get_date(&day_, &month_, &year_);
+clock_init(&global_clock, year_, month_, day_, hour, minute, second);
+
+
+    periodic_task_init_c(clock_update_task, 1000);
 
     periodic_task_init_a( loop1, 10000 );
 
-    while(1){
-
-        if(mqtt_received_publish_array_last > -1)
-        {
-
+    while (1) {
+        if (mqtt_received_publish_array_last > -1) {
             mqtt_received_publish_t temp = mqtt_received_publish_array[mqtt_received_publish_array_last--];
-
-            char* temp_topic = mqtt_received_publish_get_topic( temp );
-            char* temp_payload = mqtt_received_publish_get_payload( temp );
+            char *temp_topic = mqtt_received_publish_get_topic(temp);
+            char *temp_payload = mqtt_received_publish_get_payload(temp);
 
 
             while( NULL != strstr( temp_topic, "/" ) ){
