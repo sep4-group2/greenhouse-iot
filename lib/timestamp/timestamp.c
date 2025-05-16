@@ -69,8 +69,6 @@ bool timestamp_sync_via_http(void) {
     resp_index = 0;
     memset(recv_buf, 0, sizeof(recv_buf));
 
-    uart_send_string_blocking(USART_0, "🌐 HTTP...\n");
-
     if (wifi_command_create_TCP_connection("94.130.142.35", 80, http_response_callback, recv_buf, &recv_len) != WIFI_OK) {
         uart_send_string_blocking(USART_0, "Error TCP with site\n");
         return false;
@@ -120,7 +118,7 @@ bool timestamp_sync_via_http(void) {
             timestamp_set(h, m, s, d, mo, y); 
 
             char buf[64];
-            sprintf(buf, "📆 Timestamp: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hours, minutes, seconds);
+            sprintf(buf, "Timestamp: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hours, minutes, seconds);
             uart_send_string_blocking(USART_0, buf);
             return true;
         } else {
