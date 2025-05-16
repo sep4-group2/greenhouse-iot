@@ -133,7 +133,7 @@ int main()
                 if( 0 == strcmp( lighting_method, "\"manual\"" ) ) preset_set_lighting_method( active_preset, ACTION_MANUAL );
                 else if( 0 == strcmp( lighting_method, "\"automated\"" ) ) {
 
-                    preset_set_watering_method( active_preset, ACTION_AUTOMATED );
+                    preset_set_lighting_method( active_preset, ACTION_AUTOMATED );
 
                     char *hours_of_light_string = extract_from_json( "HoursOfLight", temp_payload );
                     int hours_of_light = atoi( hours_of_light_string );
@@ -141,7 +141,7 @@ int main()
 
                     cycle = 96;
                     light_cycle = hours_of_light * 4;
-                    dark_cycle = 96 - light_cycle;
+                    dark_cycle = cycle - light_cycle;
 
                 }
 
@@ -261,8 +261,11 @@ void loop1(){
             }
 
         }
-
-
+        else {
+            cycle = 96;
+            light_cycle = preset_get_light_hours( active_preset ) * 4;
+            dark_cycle = cycle - light_cycle;
+        }
 
     }
     else {
