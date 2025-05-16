@@ -33,6 +33,12 @@ extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 extern volatile int mqtt_received_publish_array_last;
 
 static preset_t active_preset;
+static bool water_pump_trigger = false;
+
+static int cycle = 0;
+static int light_cycle = 0;
+static int dark_cycle = 0;
+
 char mac_address[18];
 
 char *extract_substring( char *start, char *end );
@@ -130,15 +136,37 @@ clock_init(&global_clock, year_, month_, day_, hour, minute, second);
                 char *watering_method = extract_from_json( "WateringMethod", temp_payload );
 
                 if( 0 == strcmp( watering_method, "\"manual\"" ) ) preset_set_watering_method( active_preset, ACTION_MANUAL );
-                else if( 0 == strcmp( watering_method, "\"automated\"" ) ) preset_set_watering_method( active_preset, ACTION_AUTOMATED );
+                else if( 0 == strcmp( watering_method, "\"automated\"" ) ) {
 
-                char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", temp_payload );
-                int min_soil_humidity = atoi( min_soil_humidity_string );
-                preset_set_min_soil_humidity( active_preset, min_soil_humidity );
+                    preset_set_watering_method( active_preset, ACTION_AUTOMATED );
 
-                char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", temp_payload );
-                int max_soil_humidity = atoi( max_soil_humidity_string );
-                preset_set_min_soil_humidity( active_preset, max_soil_humidity );
+                    char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", temp_payload );
+                    int min_soil_humidity = atoi( min_soil_humidity_string );
+                    preset_set_min_soil_humidity( active_preset, min_soil_humidity );
+
+                    char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", temp_payload );
+                    int max_soil_humidity = atoi( max_soil_humidity_string );
+                    preset_set_min_soil_humidity( active_preset, max_soil_humidity );
+
+                }
+
+                char *lighting_method = extract_from_json( "LightingMethod", temp_payload );
+
+                if( 0 == strcmp( lighting_method, "\"manual\"" ) ) preset_set_lighting_method( active_preset, ACTION_MANUAL );
+                else if( 0 == strcmp( lighting_method, "\"automated\"" ) ) {
+
+                    preset_set_lighting_method( active_preset, ACTION_AUTOMATED );
+
+                    char *hours_of_light_string = extract_from_json( "HoursOfLight", temp_payload );
+                    int hours_of_light = atoi( hours_of_light_string );
+                    preset_set_light_hours( active_preset, hours_of_light );
+
+                    cycle = 96;
+                    light_cycle = hours_of_light * 4;
+                    dark_cycle = cycle - light_cycle;
+
+                }
+
 
             } else {
                 uart_send_string_blocking(USART_0, "3\n");
@@ -193,25 +221,78 @@ void loop1(){
 
     uint16_t light_int = light_get_percentage();
     char payload[300] = "";
-    // sprintf(payload, "{\"air_temperature\":%d,\"air_humidity\":%d,\"soil_humidity\":%d,\"light_level\":%d}", temperature_int, humidity_int, soil_humidity, light_int);
+
     sprintf(payload, "{\"MacAddress\":%s,\"SensorData\":[{\"Type\":\"Temperature\",\"Value\":%d,\"Unit\":\"C\",},{\"Type\":\"AirHumidity\",\"Value\":%d,\"Unit\":\"%%\",},{\"Type\":\"SoilHumidity\",\"Value\":%d,\"Unit\":\"%%\",},{\"Type\":\"Brightness\",\"Value\":%d,\"Unit\":\"%%\",}],\"Timestamp\":%s,}",
     mac_address, temperature_int, humidity_int, soil_humidity, light_int, "2025-05-09T11:45:00Z");
+    
     if ( !preset_is_watering_manual( active_preset ) ){
+
         int min_soil_humidity = preset_get_min_soil_humidity( active_preset );
         int max_soil_humidity = preset_get_min_soil_humidity( active_preset );
+
         if( min_soil_humidity > soil_humidity ){
             leds_turnOn(4);
-            pump_on();
-            periodic_task_init_b( loop2, 5000 );
+            water_pump_trigger = true;
         }
         else if ( max_soil_humidity < soil_humidity ){
             leds_turnOff(4);
             pump_off();
+            water_pump_trigger = false;
         }
+
+        if(water_pump_trigger){
+            pump_on();
+            leds_turnOn(4);
+            periodic_task_init_b( loop2, 5000 );
+        }
+
     }
     else {
         leds_turnOff(4);
         pump_off();
+        water_pump_trigger = false;
+    }
+
+    if ( !preset_is_lighting_manual( active_preset ) ){
+
+        if( 0 != cycle ){
+
+            cycle--;
+
+            if( 50 < light_int ){
+
+                if( 0 == light_cycle ){
+                    leds_turnOff(2);
+                    // send notification
+                }
+                else{
+                    --light_cycle;
+                }
+                
+            }
+            else {
+
+                if( 0 == dark_cycle ){
+                    leds_turnOn(2);
+                    // send notification
+                }
+                else{
+                    --dark_cycle;
+                }
+
+            }
+
+        }
+        else {
+            cycle = 96;
+            light_cycle = preset_get_light_hours( active_preset ) * 4;
+            dark_cycle = cycle - light_cycle;
+        }
+
+    }
+    else {
+        leds_turnOff(2);
+        cycle = 0;
     }
     
     mqtt_publish( topic, payload, 0, 0, 0 );
@@ -220,7 +301,6 @@ void loop1(){
 
 void loop2(){
 
-    uart_send_string_blocking(USART_0, "stopping pump\n");
     leds_turnOff(4);
     pump_off();
 
