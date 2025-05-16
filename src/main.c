@@ -24,6 +24,10 @@
 #include "clock.h"
 
 
+#include "timestamp.h"
+#include "clock.h"
+
+
 
 extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 extern volatile int mqtt_received_publish_array_last;
@@ -60,6 +64,7 @@ int main()
     light_init();
     pump_init();
     display_init();
+    timestamp_init();
     timestamp_init();
 
     sei();
