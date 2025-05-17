@@ -1,3 +1,3 @@
 #pragma once
 
-void notification_send( char *text );
+void notification_send( char *action, bool status );
