@@ -13,7 +13,7 @@ void notification_send( char *action, bool status ){
     char timestamp[21];
     clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
 
-    char payload[200];
+    char payload[200] = "";
 
     strcat( payload, "{\"MacAddress\":\"");
     strcat( payload, mac_address);

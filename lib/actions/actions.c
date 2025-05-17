@@ -1,6 +1,7 @@
 #include <stdbool.h>
 
 #include "periodic_task.h"
+#include "pump.h"
 #include "leds.h"
 #include "fertilizer.h"
 #include "notification.h"
@@ -35,6 +36,5 @@ void actions_fertilizer(){
 
     fertilizer_trigger();
     notification_send( "Fertilizer", false );
-
 
 }

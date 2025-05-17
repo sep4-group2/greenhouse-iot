@@ -18,6 +18,7 @@
 #include "pump.h"
 #include "preset.h"
 #include "fertilizer.h"
+#include "actions.h"
 
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
@@ -115,7 +116,7 @@ int main()
             
             if (strcmp(temp_topic, "light") == 0) {
 
-                leds_toggle(2);
+                actions_light();
 
             } else if (strcmp(temp_topic, "watering") == 0) {
 
@@ -284,10 +285,10 @@ void loop1(){
         }
 
     }
-    else {
-        leds_turnOff(2);
-        cycle = 0;
-    }
+    // else {
+    //     leds_turnOff(2);
+    //     cycle = 0;
+    // }
     
     mqtt_publish( topic, payload, 0, 0, 0 );
 
