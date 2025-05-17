@@ -304,8 +304,8 @@ WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(
     int *received_message_length )
 {
     received_message_buffer_static_pointer = received_message_buffer;
+    callback_when_message_received_static = callback_when_message_received;
     received_message_length_static = received_message_length;
-    user_tcp_callback = callback_when_message_received;
 
     char sendbuffer[512];
     char portString[7];
@@ -320,8 +320,8 @@ WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(
     WIFI_ERROR_MESSAGE_t errorMessage = wifi_command(sendbuffer, 20);
     if (errorMessage != WIFI_OK)
         return errorMessage;
-
-    uart_init(USART_WIFI, wifi_baudrate, wifi_internal_uart_callback); 
+    else
+        uart_init(USART_WIFI, wifi_baudrate, wifi_TCP_callback);
 
     wifi_clear_databuffer_and_index();
     return errorMessage;
@@ -334,7 +334,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
     sprintf(portString, "%u", length);
     strcat(sendbuffer, portString);
 
-    WIFI_ERROR_MESSAGE_t errorMessage = wifi_command(sendbuffer, 10);
+    WIFI_ERROR_MESSAGE_t errorMessage = wifi_command(sendbuffer, 20);
     if (errorMessage != WIFI_OK)
         return errorMessage;
 

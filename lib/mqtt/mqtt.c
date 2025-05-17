@@ -268,19 +268,22 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
             char topic1[50];
             char topic2[50];
             char topic3[50];
+            char topic4[60];
 
             get_topic_with_address( topic1, "light" );
             get_topic_with_address( topic2, "watering" );
             get_topic_with_address( topic3, "preset" );
+            get_topic_with_address( topic4, "fertilizer" );
 
             char *subscribe_topics[] = { 
                 topic1, 
                 topic2, 
-                topic3 
+                topic3, 
+                topic4 
             };
 
-            mqtt_topics_t topics = mqtt_topics_init( subscribe_topics, 3);
-            int qos[] = { 1, 1, 1 };
+            mqtt_topics_t topics = mqtt_topics_init( subscribe_topics, 4);
+            int qos[] = { 1, 1, 1, 1 };
 
             mqtt_subscribe( topics, 0, qos );
 
@@ -358,9 +361,7 @@ WIFI_TCP_Callback_t callback_when_message_received()
         int packet_total_len = 1 + consumed_bytes + rem_len;
 
         if ((pos + packet_total_len) > total_bytes_received) break;
-
         process_single_packet(packet_type, &mqtt_received_message_buf[pos], packet_total_len);
-
         pos += packet_total_len;
     }
 
