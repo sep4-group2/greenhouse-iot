@@ -48,15 +48,11 @@ void clock_tick(Clock *clk) {
 }
 
 void clock_to_string(const Clock *clk, char *buffer, size_t size) {
-    snprintf(buffer, size, "%04u-%02u-%02u %02u:%02u:%02u",
+    snprintf(buffer, size, "%04u-%02u-%02uT%02u:%02u:%02uZ",
         clk->year, clk->month, clk->day,
         clk->hour, clk->minute, clk->second);
 }
 
 void clock_update_task(void) {
     clock_tick(&global_clock);
-    char buffer[32];
-    clock_to_string(&global_clock, buffer, sizeof(buffer));
-    uart_send_string_blocking(USART_0, buffer);
-    uart_send_string_blocking(USART_0, "\n");
 }

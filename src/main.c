@@ -17,17 +17,12 @@
 #include "soil.h"
 #include "pump.h"
 #include "preset.h"
+#include "fertilizer.h"
 
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
 #include "timestamp.h"
 #include "clock.h"
-
-
-#include "timestamp.h"
-#include "clock.h"
-
-
 
 extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
 extern volatile int mqtt_received_publish_array_last;
@@ -70,44 +65,39 @@ int main()
     light_init();
     pump_init();
     display_init();
-    timestamp_init();
-    timestamp_init();
+    // timestamp_init();
 
     sei();
 
-    char *ssid = "Xiaomi 12";
-    char *password = "patty123";
-    char *mqtt_ip = "192.168.150.208";
+    char *ssid = "pixelphon";
+    char *password = "poopdotcom";
+    char *mqtt_ip = "172.25.2.215";
     int mqtt_port = 1883;
 
-    if (wifi_command_set_mode_to_1() != WIFI_OK ||
-        wifi_command_disable_echo() != WIFI_OK ||
-        wifi_command_join_AP(ssid, password) != WIFI_OK) {
-        uart_send_string_blocking(USART_0, "Error WiFi\n");
-        while(1);
-    }
+    // if (wifi_command_set_mode_to_1() != WIFI_OK ||
+    //     wifi_command_disable_echo() != WIFI_OK ||
+    //     wifi_command_join_AP(ssid, password) != WIFI_OK) {
+    //     uart_send_string_blocking(USART_0, "Error WiFi\n");
+    //     while(1);
+    // }
 
-    if (!timestamp_sync_via_http()) {
-        uart_send_string_blocking(USART_0, "Error HTTP\n");
-    }
+    // if (!timestamp_sync_via_http()) {
+    //     uart_send_string_blocking(USART_0, "Error HTTP\n");
+    // }
 
-    wifi_command_close_TCP_connection();
+    // wifi_command_quit_AP();
 
-    if (mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address) != WIFI_OK) {
-        uart_send_string_blocking(USART_0, "Error MQTT\n");
-        while(1);
-    }
+    // uint8_t hour = 0, minute = 0, second = 0;
+    // uint8_t day_ = 0, month_ = 0;
+    // uint16_t year_ = 0;
 
-uint8_t hour = 0, minute = 0, second = 0;
-uint8_t day_ = 0, month_ = 0;
-uint16_t year_ = 0;
+    // timestamp_get(&hour, &minute, &second);
+    // timestamp_get_date(&day_, &month_, &year_);
+    // clock_init(&global_clock, year_, month_, day_, hour, minute, second);
 
-timestamp_get(&hour, &minute, &second);
-timestamp_get_date(&day_, &month_, &year_);
-clock_init(&global_clock, year_, month_, day_, hour, minute, second);
+    // periodic_task_init_c( clock_update_task, 1000);
 
-
-    periodic_task_init_c(clock_update_task, 1000);
+    mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address);
 
     periodic_task_init_a( loop1, 10000 );
 
@@ -130,6 +120,10 @@ clock_init(&global_clock, year_, month_, day_, hour, minute, second);
             } else if (strcmp(temp_topic, "watering") == 0) {
 
                 leds_toggle(3);
+
+            } else if (strcmp(temp_topic, "fertilizer") == 0) {
+
+                fertilizer_trigger();
 
             } else if (strcmp(temp_topic, "preset") == 0) {
 
@@ -190,7 +184,7 @@ char *extract_substring( char *start, char *end ) {
 }
 
 char *extract_from_json( char *to_extract, char *json ){
-    char temp[50];
+    char temp[100];
     sprintf( temp, "\"%s\"", to_extract );
 
     char *extracted_start = strstr( json, temp );
