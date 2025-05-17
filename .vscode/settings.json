@@ -19,6 +19,7 @@
         "mqtt_received_publish.h": "c",
         "stdio.h": "c",
         "delay.h": "c",
-        "timestamp.h": "c"
+        "timestamp.h": "c",
+        "fertilizer.h": "c"
     }
 }
