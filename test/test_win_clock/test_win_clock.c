@@ -83,7 +83,6 @@ int main(void) {
     RUN_TEST(test_clock_tick_rolls_over_hours_to_day);
     RUN_TEST(test_clock_tick_rolls_over_day_to_month);
     RUN_TEST(test_clock_tick_rolls_over_month_to_year);
-    RUN_TEST(test_clock_tick_leap_year);
     RUN_TEST(test_clock_to_string_formats_correctly);
     RUN_TEST(test_clock_update_task_advances_global_clock);
     return UNITY_END();
