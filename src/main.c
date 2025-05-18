@@ -69,9 +69,9 @@ int main()
 
     sei();
 
-    char *ssid = "pixelphon";
-    char *password = "poopdotcom";
-    char *mqtt_ip = "172.25.2.215";
+    char *ssid = "Xiaomi 12";
+    char *password = "patty123";
+    char *mqtt_ip = "192.168.75.208";
     int mqtt_port = 1883;
 
     // if (wifi_command_set_mode_to_1() != WIFI_OK ||
