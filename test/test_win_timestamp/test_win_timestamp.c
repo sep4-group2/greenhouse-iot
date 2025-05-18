@@ -12,14 +12,12 @@ FAKE_VALUE_FUNC(WIFI_ERROR_MESSAGE_t, wifi_command_TCP_transmit, uint8_t*, uint1
 FAKE_VOID_FUNC(uart_send_string_blocking, USART_t, char*);
 FAKE_VOID_FUNC(_delay_ms, int);
 
-// Fake de delay acumulativo
 void fake_delay_ms(int ms) {
     static int total = 0;
     total += ms;
     if (total > 50) total = 0;
 }
 
-// Fake para simular respuesta HTTP
 WIFI_ERROR_MESSAGE_t fake_tcp_conn(char* ip, uint16_t port, WIFI_TCP_Callback_t callback, char* buf, int* len) {
     const char* fake_response =
         "HTTP/1.1 200 OK\r\n"
