@@ -20,14 +20,32 @@ static void pump_cut_off(){
 
 void actions_pump(){
 
+    leds_turnOn(4);
+    pump_on();
     periodic_task_init_b( pump_cut_off, 5000 );
 
 }
 
-void actions_light(){
+void actions_light_toggle(){
 
     leds_toggle(2);
     light = !light;
+    notification_send( "Lighting", light );
+
+}
+
+void actions_light_off(){
+
+    leds_turnOff(2);
+    light = false;
+    notification_send( "Lighting", light );
+
+}
+
+void actions_light_on(){
+
+    leds_turnOn(2);
+    light = true;
     notification_send( "Lighting", light );
 
 }
