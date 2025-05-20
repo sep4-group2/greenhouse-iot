@@ -339,7 +339,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
         return errorMessage;
 
     // Enviar los datos reales
-    uart_send_array_blocking(USART_WIFI, data, length);
+    uart_send_array_nonBlocking(USART_WIFI, data, length);
     return WIFI_OK;
 }
 

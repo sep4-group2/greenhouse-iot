@@ -77,9 +77,12 @@ int main()
 
     sei();
 
-    char *ssid = "Xiaomi 12";
-    char *password = "patty123";
-    char *mqtt_ip = "192.168.139.178";
+    // char *ssid = "Xiaomi 12";
+    // char *password = "patty123";
+    // char *mqtt_ip = "192.168.139.178";
+    char *ssid = "pixelphon";
+    char *password = "poopdotcom";
+    char *mqtt_ip = "172.25.2.215";
     int mqtt_port = 1883;
 
     // if (wifi_command_set_mode_to_1() != WIFI_OK ||
@@ -393,9 +396,6 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
             }
 
                 char publish_payload[128] = "";
-
-            uart_send_string_blocking( USART_0, topic_copy );
-
 
                 strncpy( publish_payload, payload, payload_len );
 
