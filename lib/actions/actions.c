@@ -32,7 +32,7 @@ void actions_light_toggle(){
     leds_toggle(2);
     lightbulb_toggle();
     light = !light;
-    // notification_send( "Lighting", light );
+    notification_send( "Lighting", light );
 
 }
 

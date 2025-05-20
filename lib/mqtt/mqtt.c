@@ -1,34 +1,32 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
 #include "wifi.h"
 #include "uart.h"
 #include "mqtt_topics.h"
-#include "mqtt_received_publish.h"
+#include "mqtt_buffer.h"
+#include "mqtt_received_packet.h"
 
 #include "MQTTPacket.h"
 
-#define MQTT_RECEIVED_MESSAGE_BUF_SIZE 256
-
-extern char mac_address[18];
-
-volatile mqtt_received_publish_t mqtt_received_publish_array[25];
-volatile int mqtt_received_publish_array_last = -1;
-volatile int mqtt_received_publish_payload_len;
+#define MQTT_RECEIVED_MESSAGE_BUF_SIZE 512
 
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
 int mqtt_received_message_length;
+
+extern char mac_address[18];
+
+volatile mqtt_buffer_t mqtt_packet_buffer;
 
 static int create_connect_packet ( unsigned char *buf, int buflen, char *client_id );
 static int create_publish_packet ( 
     char *topic, char *payload, char *buf, int buflen,
     int dup_flag, int qos_flag, int retained_flag, short packet_id );
 static int create_subscribe_packet ( mqtt_topics_t topics, char *buf, int buflen, int dup_flag, short packet_id, int qos[] );
-static void process_single_packet( unsigned char packet_type, char* buf, int len );
 static void clear_received_message_buf();
-static void get_topic_with_address( char *topic_dest, char *topic );
-WIFI_TCP_Callback_t callback_when_message_received();
+void callback_when_message_received();
 
 // code implementations
 
@@ -39,6 +37,8 @@ void mqtt_init()
     uart_send_string_blocking(USART_0, "Initializing mqtt driver...\n");
 
     wifi_init();
+
+    mqtt_packet_buffer = mqtt_buffer_init();
 
 }
 
@@ -119,6 +119,7 @@ WIFI_ERROR_MESSAGE_t mqtt_reconnect( char *ip, uint16_t port, char *client_id )
 
 WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int qos_flag, int retained_flag )
 {
+
     short packet_id;
 
     if (qos_flag > 0)
@@ -233,117 +234,7 @@ static void clear_received_message_buf()
     
 }
 
-static void get_topic_with_address( char *topic_dest, char *topic ){
-
-    char temp_topic[50] = "greenhouse/";
-    strcat(temp_topic, mac_address);
-    strcat(temp_topic, "/");
-    strcat(temp_topic, topic);
-    strcpy( topic_dest, temp_topic);
-    
-}
-
-static void process_single_packet( unsigned char packet_type, char* buf, int len ) {
-
-    // connack flags
-    unsigned char sessionPresent;
-    unsigned char connack_rc;
-
-    // publish flags
-    unsigned char dup;
-    int qos;
-    unsigned char retained;
-    unsigned short packetId;
-    MQTTString topic;
-    unsigned char* payload;
-
-
-    switch ( packet_type ) 
-    {
-
-    case CONNACK:
-
-        if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
-
-            char topic1[50];
-            char topic2[50];
-            char topic3[50];
-            char topic4[60];
-
-            get_topic_with_address( topic1, "light" );
-            get_topic_with_address( topic2, "watering" );
-            get_topic_with_address( topic3, "preset" );
-            get_topic_with_address( topic4, "fertilizer" );
-
-            char *subscribe_topics[] = { 
-                topic1, 
-                topic2, 
-                topic3, 
-                topic4 
-            };
-
-            mqtt_topics_t topics = mqtt_topics_init( subscribe_topics, 4);
-            int qos[] = { 0, 0, 0, 0 };
-
-            mqtt_subscribe( topics, 0, qos );
-
-        } else {
-
-        }
-
-    break;
-
-    case SUBACK:
-        
-    break;
-
-    case PUBACK:
-
-    break;
-
-    case PINGRESP:
-
-    break;
-
-    case PUBLISH:
-
-        if( MQTTDeserialize_publish( 
-            &dup, &qos, &retained, &packetId, 
-            &topic, &payload, &mqtt_received_publish_payload_len,
-            buf, len
-        ) == 1 )
-        {
-
-            char *topic_copy = malloc(topic.lenstring.len + 1);
-            if (topic_copy != NULL) {
-                memcpy(topic_copy, topic.lenstring.data, topic.lenstring.len);
-                topic_copy[topic.lenstring.len] = '\0';
-            }
-
-            mqtt_received_publish_t received_message = mqtt_received_publish_init( payload, mqtt_received_publish_payload_len, topic_copy, topic.lenstring.len );
-            mqtt_received_publish_array[++mqtt_received_publish_array_last] = received_message;
-
-            if (qos == 1) {
-                unsigned char puback_buf[50];
-                int puback_buf_len = MQTTSerialize_puback(puback_buf, sizeof(puback_buf), packetId);
-                wifi_command_TCP_transmit(puback_buf, puback_buf_len);
-            }
-            
-        }
-        else {
-
-        }
-
-    break;
-    
-    default:
-
-    break;
-
-    }
-}
-
-WIFI_TCP_Callback_t callback_when_message_received() 
+void callback_when_message_received() 
 {
 
     int pos = 0;
@@ -361,12 +252,12 @@ WIFI_TCP_Callback_t callback_when_message_received()
         int packet_total_len = 1 + consumed_bytes + rem_len;
 
         if ((pos + packet_total_len) > total_bytes_received) break;
-        process_single_packet(packet_type, &mqtt_received_message_buf[pos], packet_total_len);
+
+        mqtt_received_packet_t received_packet = mqtt_received_packet_init( packet_type, &mqtt_received_message_buf[pos], packet_total_len );
+        mqtt_buffer_push( mqtt_packet_buffer, received_packet );
         pos += packet_total_len;
     }
 
     clear_received_message_buf();
-
-    return ;
 
 }

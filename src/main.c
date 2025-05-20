@@ -22,12 +22,13 @@
 #include "actions.h"
 
 #include "mqtt_topics.h"
-#include "mqtt_received_publish.h"
+#include "mqtt_received_packet.h"
+#include "mqtt_buffer.h"
+#include "MQTTPacket.h"
 #include "timestamp.h"
 #include "clock.h"
 
-extern volatile mqtt_received_publish_t mqtt_received_publish_array[25];
-extern volatile int mqtt_received_publish_array_last;
+extern volatile mqtt_buffer_t mqtt_packet_buffer;
 
 static preset_t active_preset;
 static bool water_pump_trigger = false;
@@ -41,6 +42,12 @@ char mac_address[18];
 char *extract_substring( char *start, char *end );
 
 char *extract_from_json( char *to_extract, char *json );
+
+static void process_single_publish ( char *publish_topic, char *publish_payload );
+
+static void process_single_packet( unsigned char packet_type, char* buf, int len );
+
+static void get_topic_with_address( char *topic_dest, char *topic );
 
 void loop();
 
@@ -70,6 +77,9 @@ int main()
 
     sei();
 
+    // char *ssid = "Xiaomi 12";
+    // char *password = "patty123";
+    // char *mqtt_ip = "192.168.139.178";
     char *ssid = "pixelphon";
     char *password = "poopdotcom";
     char *mqtt_ip = "172.25.2.215";
@@ -104,73 +114,31 @@ int main()
     periodic_task_init_a( loop, 10000 );
 
     while (1) {
-        if (mqtt_received_publish_array_last > -1) {
-            mqtt_received_publish_t temp = mqtt_received_publish_array[mqtt_received_publish_array_last--];
-            char *temp_topic = mqtt_received_publish_get_topic(temp);
-            char *temp_payload = mqtt_received_publish_get_payload(temp);
 
+        if ( !mqtt_buffer_is_empty( mqtt_packet_buffer ) ) {
 
-            while( NULL != strstr( temp_topic, "/" ) ){
-                temp_topic = strstr( temp_topic, "/" );
-                temp_topic++;
-            }
-            
-            if (strcmp(temp_topic, "light") == 0) {
+            mqtt_received_packet_t temp = mqtt_buffer_pop ( mqtt_packet_buffer );
 
-                actions_light_toggle();
+            char packet_type = mqtt_received_packet_get_type( temp );
+            char *buf = mqtt_received_packet_get_buf( temp );
+            int len = mqtt_received_packet_get_len( temp );
 
-            } else if (strcmp(temp_topic, "watering") == 0) {
+            process_single_packet( packet_type, buf, len );
 
-                actions_pump();
-
-            } else if (strcmp(temp_topic, "fertilizer") == 0) {
-
-                actions_fertilizer();
-
-            } else if (strcmp(temp_topic, "preset") == 0) {
-
-                char *watering_method = extract_from_json( "WateringMethod", temp_payload );
-
-                if( 0 == strcmp( watering_method, "\"manual\"" ) ) preset_set_watering_method( active_preset, ACTION_MANUAL );
-                else if( 0 == strcmp( watering_method, "\"automated\"" ) ) {
-
-                    preset_set_watering_method( active_preset, ACTION_AUTOMATED );
-
-                    char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", temp_payload );
-                    int min_soil_humidity = atoi( min_soil_humidity_string );
-                    preset_set_min_soil_humidity( active_preset, min_soil_humidity );
-
-                    char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", temp_payload );
-                    int max_soil_humidity = atoi( max_soil_humidity_string );
-                    preset_set_min_soil_humidity( active_preset, max_soil_humidity );
-
-                }
-
-                char *lighting_method = extract_from_json( "LightingMethod", temp_payload );
-
-                if( 0 == strcmp( lighting_method, "\"manual\"" ) ) preset_set_lighting_method( active_preset, ACTION_MANUAL );
-                else if( 0 == strcmp( lighting_method, "\"automated\"" ) ) {
-
-                    preset_set_lighting_method( active_preset, ACTION_AUTOMATED );
-
-                    char *hours_of_light_string = extract_from_json( "HoursOfLight", temp_payload );
-                    int hours_of_light = atoi( hours_of_light_string );
-                    preset_set_light_hours( active_preset, hours_of_light );
-
-                    cycle = 96;
-                    light_cycle = hours_of_light * 4;
-                    dark_cycle = cycle - light_cycle;
-
-                }
-
-
-            } else {
-                uart_send_string_blocking(USART_0, "3\n");
-            }
         }
     }
 
     return 0;
+}
+
+static void get_topic_with_address( char *topic_dest, char *topic ){
+
+    char temp_topic[50] = "greenhouse/";
+    strcat(temp_topic, mac_address);
+    strcat(temp_topic, "/");
+    strcat(temp_topic, topic);
+    strcpy( topic_dest, temp_topic);
+    
 }
 
 char *extract_substring( char *start, char *end ) {
@@ -286,4 +254,169 @@ void loop(){
     
     mqtt_publish( topic, payload, 0, 0, 0 );
 
+}
+
+static void process_single_publish ( char *publish_topic, char *publish_payload ){
+
+    while( NULL != strstr( publish_topic, "/" ) ){
+        publish_topic = strstr( publish_topic, "/" );
+        publish_topic++;
+    }
+            
+    if (strcmp(publish_topic, "light") == 0) {
+
+        actions_light_toggle();
+
+    } else if (strcmp(publish_topic, "watering") == 0) {
+
+        actions_pump();
+
+    } else if (strcmp(publish_topic, "fertilizer") == 0) {
+
+        actions_fertilizer();
+
+    } else if (strcmp(publish_topic, "preset") == 0) {
+
+        char *watering_method = extract_from_json( "WateringMethod", publish_payload );
+
+        if( 0 == strcmp( watering_method, "\"manual\"" ) ) preset_set_watering_method( active_preset, ACTION_MANUAL );
+        else if( 0 == strcmp( watering_method, "\"automated\"" ) ) {
+
+            preset_set_watering_method( active_preset, ACTION_AUTOMATED );
+
+            char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", publish_payload );
+            int min_soil_humidity = atoi( min_soil_humidity_string );
+            preset_set_min_soil_humidity( active_preset, min_soil_humidity );
+
+            char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", publish_payload );
+            int max_soil_humidity = atoi( max_soil_humidity_string );
+            preset_set_min_soil_humidity( active_preset, max_soil_humidity );
+
+        }
+
+        char *lighting_method = extract_from_json( "LightingMethod", publish_payload );
+
+        if( 0 == strcmp( lighting_method, "\"manual\"" ) ) preset_set_lighting_method( active_preset, ACTION_MANUAL );
+        else if( 0 == strcmp( lighting_method, "\"automated\"" ) ) {
+
+            preset_set_lighting_method( active_preset, ACTION_AUTOMATED );
+
+            char *hours_of_light_string = extract_from_json( "HoursOfLight", publish_payload );
+            int hours_of_light = atoi( hours_of_light_string );
+            preset_set_light_hours( active_preset, hours_of_light );
+
+            cycle = 96;
+            light_cycle = hours_of_light * 4;
+            dark_cycle = cycle - light_cycle;
+
+        }
+
+
+    } else {
+        uart_send_string_blocking(USART_0, "3\n");
+    }
+}
+
+static void process_single_packet( unsigned char packet_type, char* buf, int len ) {
+
+    // connack flags
+    unsigned char sessionPresent;
+    unsigned char connack_rc;
+
+    // publish flags
+    unsigned char dup;
+    int qos;
+    unsigned char retained;
+    unsigned short packetId;
+    MQTTString topic;
+    unsigned char* payload;
+    int payload_len;
+
+
+    switch ( packet_type ) 
+    {
+
+    case CONNACK:
+
+        if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
+
+            char topic1[50];
+            char topic2[50];
+            char topic3[50];
+            char topic4[60];
+
+            get_topic_with_address( topic1, "light" );
+            get_topic_with_address( topic2, "watering" );
+            get_topic_with_address( topic3, "preset" );
+            get_topic_with_address( topic4, "fertilizer" );
+
+            char *subscribe_topics[] = { 
+                topic1, 
+                topic2, 
+                topic3, 
+                topic4 
+            };
+
+            mqtt_topics_t topics = mqtt_topics_init( subscribe_topics, 4);
+            int qos[] = { 0, 0, 0, 0 };
+
+            mqtt_subscribe( topics, 0, qos );
+
+        } else {
+
+        }
+
+    break;
+
+    case SUBACK:
+        
+    break;
+
+    case PUBACK:
+
+    break;
+
+    case PINGRESP:
+
+    break;
+
+    case PUBLISH:
+
+        if( MQTTDeserialize_publish( 
+            &dup, &qos, &retained, &packetId, 
+            &topic, &payload, &payload_len,
+            buf, len
+        ) == 1 )
+        {
+
+            char *topic_copy = malloc(topic.lenstring.len + 1);
+            if (topic_copy != NULL) {
+                memcpy(topic_copy, topic.lenstring.data, topic.lenstring.len);
+                topic_copy[topic.lenstring.len] = '\0';
+            }
+
+                char publish_payload[128] = "";
+
+                strncpy( publish_payload, payload, payload_len );
+
+                process_single_publish( topic_copy, publish_payload );
+
+            if (qos == 1) {
+                unsigned char puback_buf[50];
+                int puback_buf_len = MQTTSerialize_puback(puback_buf, sizeof(puback_buf), packetId);
+                wifi_command_TCP_transmit(puback_buf, puback_buf_len);
+            }
+            
+        }
+        else {
+
+        }
+
+    break;
+    
+    default:
+
+    break;
+
+    }
 }
