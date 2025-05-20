@@ -8,7 +8,6 @@
 
 void setUp(void)
 {
-    buttons_init();
 }
 
 void tearDown(void)

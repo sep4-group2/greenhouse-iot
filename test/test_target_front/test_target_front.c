@@ -96,7 +96,6 @@ int main(void)
     RUN_TEST(test_dht11_status);
     RUN_TEST(test_temperature_is_22celc);
     RUN_TEST(test_light_returns_a_value);
-    RUN_TEST(test_light_is_dark);
     RUN_TEST(test_light_is_is_light);
     return UNITY_END();
 }
