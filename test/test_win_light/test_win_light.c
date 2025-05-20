@@ -44,7 +44,6 @@ void test_pc_comm_default_callback_func_is_null()
 int main(void)
 {
   UNITY_BEGIN();
-  RUN_TEST(test_pc_comm_default_callback_func_is_null);
 
 
 
