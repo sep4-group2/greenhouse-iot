@@ -1,6 +1,9 @@
 #include "unity.h"
 #include "servo.h"
+
+#ifndef WINDOWS_TEST
 #include <avr/io.h>
+#include <util/delay.h>
 
 void setUp(void) {
     DDRE = 0;
@@ -50,3 +53,5 @@ int main(void) {
     RUN_TEST(test_servo_should_clip_angle_below_0);
     return UNITY_END();
 }
+
+#endif

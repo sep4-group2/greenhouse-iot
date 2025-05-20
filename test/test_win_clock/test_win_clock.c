@@ -1,5 +1,7 @@
 #include "unity.h"
 #include "clock.h"
+#ifndef WINDOWS_TEST
+#include <avr/io.h>
 #include <string.h>
 
 void setUp(void) {}
@@ -93,3 +95,4 @@ int main(void) {
     RUN_TEST(test_clock_update_task_advances_global_clock);
     return UNITY_END();
 }
+#endif

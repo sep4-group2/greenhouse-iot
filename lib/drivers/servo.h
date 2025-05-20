@@ -1,8 +1,10 @@
+
 #ifndef SERVO_H
 #define SERVO_H
 
 #include <stdint.h>
-#include <avr/io.h>
+
+
 
 #define DDR_SERVO DDRE
 #define PORT_SERVO PORTE

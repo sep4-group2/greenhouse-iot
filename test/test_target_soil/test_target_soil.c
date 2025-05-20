@@ -1,7 +1,7 @@
 #include "unity.h"
 #include "soil.h"
+#ifndef WINDOWS_TEST
 #include <avr/io.h>
-
 void setUp(void) {
     ADMUX = 0;
     ADCSRA = 0;
@@ -35,3 +35,4 @@ int main(void) {
     RUN_TEST(test_soil_read_should_return_percentage_in_valid_range);
     return UNITY_END();
 }
+#endif

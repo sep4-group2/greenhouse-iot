@@ -1,3 +1,5 @@
+
+
 #include <servo.h>
 #include "includes.h"
 
@@ -5,6 +7,8 @@
 #define DDR_SERVO DDRE
 #define P_SERVO PE3
 #define PORT_SERVO PORTE
+
+#include <util/delay.h>
 
 void servo(uint8_t angle)
 {

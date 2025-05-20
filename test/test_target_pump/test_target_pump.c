@@ -1,7 +1,8 @@
 #include "unity.h"
 #include "pump.h"
+#ifndef WINDOWS_TEST
 #include <avr/io.h>
-
+#include <util/delay.h>
 void setUp(void) {
     DDRC = 0x00;
     PORTC = 0xFF;
@@ -55,3 +56,4 @@ int main(void) {
     RUN_TEST(test_pump_toggle_should_invert_PC7);
     return UNITY_END();
 }
+#endif
