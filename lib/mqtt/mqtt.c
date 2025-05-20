@@ -283,7 +283,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
             };
 
             mqtt_topics_t topics = mqtt_topics_init( subscribe_topics, 4);
-            int qos[] = { 1, 1, 1, 1 };
+            int qos[] = { 0, 0, 0, 0 };
 
             mqtt_subscribe( topics, 0, qos );
 

@@ -13,6 +13,7 @@
 #include "periodic_task.h"
 #include "light.h"
 #include "leds.h"
+#include "lightbulb.h"
 #include "dht11.h"
 #include "soil.h"
 #include "pump.h"
@@ -63,6 +64,7 @@ int main()
     leds_init();
     light_init();
     pump_init();
+    lightbulb_init();
     display_init();
     timestamp_init();
 

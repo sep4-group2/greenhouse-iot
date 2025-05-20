@@ -10,8 +10,8 @@ void notification_send( char *action, bool status ){
 
     char *topic = "greenhouse/action";
     char *status_text = (status ? "true" : "false" );
-    char timestamp[21];
-    clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
+    char timestamp[22] = "0000-00-00T00:00:00Z";
+    // clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
 
     char payload[200] = "";
 

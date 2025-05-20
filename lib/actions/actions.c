@@ -4,6 +4,7 @@
 #include "pump.h"
 #include "leds.h"
 #include "fertilizer.h"
+#include "lightbulb.h"
 #include "notification.h"
 
 bool light = false;
@@ -29,13 +30,15 @@ void actions_pump(){
 void actions_light_toggle(){
 
     leds_toggle(2);
+    lightbulb_toggle();
     light = !light;
-    notification_send( "Lighting", light );
+    // notification_send( "Lighting", light );
 
 }
 
 void actions_light_off(){
 
+    lightbulb_off();
     leds_turnOff(2);
     light = false;
     notification_send( "Lighting", light );
@@ -44,6 +47,7 @@ void actions_light_off(){
 
 void actions_light_on(){
 
+    lightbulb_on();
     leds_turnOn(2);
     light = true;
     notification_send( "Lighting", light );
