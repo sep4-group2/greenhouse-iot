@@ -13,11 +13,13 @@
 #include "periodic_task.h"
 #include "light.h"
 #include "leds.h"
+#include "lightbulb.h"
 #include "dht11.h"
 #include "soil.h"
 #include "pump.h"
 #include "preset.h"
 #include "fertilizer.h"
+#include "actions.h"
 
 #include "mqtt_topics.h"
 #include "mqtt_received_publish.h"
@@ -40,9 +42,7 @@ char *extract_substring( char *start, char *end );
 
 char *extract_from_json( char *to_extract, char *json );
 
-void loop1();
-
-void loop2();
+void loop();
 
 int main()
 {
@@ -64,8 +64,9 @@ int main()
     leds_init();
     light_init();
     pump_init();
+    lightbulb_init();
     display_init();
-    // timestamp_init();
+    timestamp_init();
 
     sei();
 
@@ -85,7 +86,8 @@ int main()
     //     uart_send_string_blocking(USART_0, "Error HTTP\n");
     // }
 
-    // wifi_command_quit_AP();
+    // wifi_command_close_TCP_connection();
+
 
     // uint8_t hour = 0, minute = 0, second = 0;
     // uint8_t day_ = 0, month_ = 0;
@@ -99,7 +101,7 @@ int main()
 
     mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address);
 
-    periodic_task_init_a( loop1, 10000 );
+    periodic_task_init_a( loop, 10000 );
 
     while (1) {
         if (mqtt_received_publish_array_last > -1) {
@@ -115,15 +117,15 @@ int main()
             
             if (strcmp(temp_topic, "light") == 0) {
 
-                leds_toggle(2);
+                actions_light_toggle();
 
             } else if (strcmp(temp_topic, "watering") == 0) {
 
-                leds_toggle(3);
+                actions_pump();
 
             } else if (strcmp(temp_topic, "fertilizer") == 0) {
 
-                fertilizer_trigger();
+                actions_fertilizer();
 
             } else if (strcmp(temp_topic, "preset") == 0) {
 
@@ -202,7 +204,7 @@ char *extract_from_json( char *to_extract, char *json ){
 
 }
 
-void loop1(){
+void loop(){
 
     char *topic = "greenhouse/sensors";
 
@@ -225,19 +227,14 @@ void loop1(){
         int max_soil_humidity = preset_get_min_soil_humidity( active_preset );
 
         if( min_soil_humidity > soil_humidity ){
-            leds_turnOn(4);
             water_pump_trigger = true;
         }
         else if ( max_soil_humidity < soil_humidity ){
-            leds_turnOff(4);
-            pump_off();
             water_pump_trigger = false;
         }
 
         if(water_pump_trigger){
-            pump_on();
-            leds_turnOn(4);
-            periodic_task_init_b( loop2, 5000 );
+            actions_pump();
         }
 
     }
@@ -249,15 +246,16 @@ void loop1(){
 
     if ( !preset_is_lighting_manual( active_preset ) ){
 
-        if( 0 != cycle ){
+        if( 0 < cycle ){
 
             cycle--;
 
             if( 50 < light_int ){
 
                 if( 0 == light_cycle ){
-                    leds_turnOff(2);
-                    // send notification
+
+                    actions_light_off();
+
                 }
                 else{
                     --light_cycle;
@@ -267,8 +265,9 @@ void loop1(){
             else {
 
                 if( 0 == dark_cycle ){
-                    leds_turnOn(2);
-                    // send notification
+
+                    actions_light_on(2);
+
                 }
                 else{
                     --dark_cycle;
@@ -284,18 +283,7 @@ void loop1(){
         }
 
     }
-    else {
-        leds_turnOff(2);
-        cycle = 0;
-    }
     
     mqtt_publish( topic, payload, 0, 0, 0 );
-
-}
-
-void loop2(){
-
-    leds_turnOff(4);
-    pump_off();
 
 }

@@ -12,7 +12,7 @@ typedef struct preset {
 
     int minSoilHumidity;
     int maxSoilHumidity;
-    long long lightHours;
+    int lightHours;
 
 } preset;
 
@@ -69,7 +69,7 @@ int preset_get_max_soil_humidity ( preset_t self ){
     return self->maxSoilHumidity;
 }
 
-long long preset_get_light_hours( preset_t self ){
+int preset_get_light_hours( preset_t self ){
     return self->lightHours;
 }
 
@@ -93,6 +93,6 @@ void preset_set_max_soil_humidity( preset_t self, int maxHumidity ) {
     self->maxSoilHumidity = maxHumidity;
 }
 
-void preset_set_light_hours( preset_t self, long long hours ) {
+void preset_set_light_hours( preset_t self, int hours ) {
     self->lightHours = hours;
 }

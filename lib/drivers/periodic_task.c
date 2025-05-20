@@ -131,7 +131,7 @@ void periodic_task_init_a(void (*user_function_a)(void), uint32_t interval_ms_a)
 void periodic_task_init_b(void (*user_function_b)(void), uint32_t interval_ms_b) {
     user_func_b = user_function_b;
     init_timer4();
-    // TCNT4 = 0;
+    TCNT4 = 0;
 
     cnt_b = (interval_ms_b/1000*(F_CPU/1024))/0xFFFF;//(interval_ms_a*125)>>19;
     loops_b=cnt_b;

@@ -2,7 +2,6 @@
 
 typedef enum {
     ACTION_MANUAL,
-    ACTION_SCHEDULED,
     ACTION_AUTOMATED
 } ACTION_METHOD;
 
@@ -28,7 +27,7 @@ int preset_get_min_soil_humidity ( preset_t self );
 
 int preset_get_max_soil_humidity ( preset_t self );
 
-long long preset_get_light_hours( preset_t self );
+int preset_get_light_hours( preset_t self );
 
 void preset_set_watering_method( preset_t self, ACTION_METHOD method );
 
@@ -40,4 +39,4 @@ void preset_set_min_soil_humidity( preset_t self, int minHumidity );
 
 void preset_set_max_soil_humidity( preset_t self, int maxHumidity );
 
-void preset_set_light_hours( preset_t self, long long hours );
+void preset_set_light_hours( preset_t self, int hours );
