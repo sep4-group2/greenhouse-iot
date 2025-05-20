@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -28,7 +29,7 @@ static int create_subscribe_packet ( mqtt_topics_t topics, char *buf, int buflen
 static void process_single_packet( unsigned char packet_type, char* buf, int len );
 static void clear_received_message_buf();
 static void get_topic_with_address( char *topic_dest, char *topic );
-WIFI_TCP_Callback_t callback_when_message_received();
+void callback_when_message_received();
 
 // code implementations
 
@@ -343,7 +344,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     }
 }
 
-WIFI_TCP_Callback_t callback_when_message_received() 
+void callback_when_message_received() 
 {
 
     int pos = 0;
@@ -366,7 +367,5 @@ WIFI_TCP_Callback_t callback_when_message_received()
     }
 
     clear_received_message_buf();
-
-    return ;
 
 }
