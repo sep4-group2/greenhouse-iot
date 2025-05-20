@@ -23,6 +23,7 @@
         "fertilizer.h": "c",
         "notification.h": "c",
         "lightbulb.h": "c",
-        "mqtt_received_packet.h": "c"
+        "mqtt_received_packet.h": "c",
+        "periodic_task.h": "c"
     }
 }

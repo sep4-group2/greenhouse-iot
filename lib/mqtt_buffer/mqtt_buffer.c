@@ -2,9 +2,10 @@
 #include <stdlib.h>
 
 #include "mqtt_buffer.h"
+#include "mqtt_received_packet.h"
 
 typedef struct mqtt_buffer {
-    mqtt_received_publish_t buffer[BUFFER_CAPACITY];
+    mqtt_received_packet_t buffer[BUFFER_CAPACITY];
     int head;
     int tail;
     int count;
@@ -21,8 +22,8 @@ mqtt_buffer_t mqtt_buffer_init( ) {
     return _new_buf;
 }
 
-bool mqtt_buffer_push( mqtt_buffer_t self, mqtt_received_publish_t item ) {
-    if ( self->count == BUFFER_CAPACITY ) return false;
+bool mqtt_buffer_push( mqtt_buffer_t self, mqtt_received_packet_t item ) {
+    if ( NULL == self || self->count == BUFFER_CAPACITY ) return false;
 
     self->buffer[self->tail] = item;
     self->tail = (self->tail + 1) % BUFFER_CAPACITY;
@@ -30,11 +31,16 @@ bool mqtt_buffer_push( mqtt_buffer_t self, mqtt_received_publish_t item ) {
     return true;
 }
 
-bool mqtt_buffer_pop( mqtt_buffer_t self, mqtt_received__t item ) {
-    if ( self->count == 0 ) return false;
+mqtt_received_packet_t mqtt_buffer_pop( mqtt_buffer_t self ) {
+    if (!self || self->count == 0) return NULL;
 
-    *item = self->buffer[self->head];
-    self->head = ( self->head + 1 ) % BUFFER_CAPACITY;
+    mqtt_received_packet_t pkt = self->buffer[self->head];
+    self->head = (self->head + 1) % BUFFER_CAPACITY;
     self->count--;
-    return true;
+    return pkt;
+}
+
+bool mqtt_buffer_is_empty( mqtt_buffer_t self ) {
+    if ( NULL == self ) return false;
+    return 0 == self->count;
 }

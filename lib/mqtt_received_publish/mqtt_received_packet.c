@@ -13,9 +13,11 @@ mqtt_received_packet_t mqtt_received_packet_init( unsigned char packet_type, cha
 
     mqtt_received_packet_t _received_packet = calloc( 1, sizeof(mqtt_received_packet) );
 
-    if( NULL == _received_packet ) return NULL;
-
-    if( NULL == buf ) return NULL;
+    _received_packet->buf = malloc(len + 1);
+    if (NULL == _received_packet->buf || NULL == buf || NULL == _received_packet ) {
+        free(_received_packet);
+        return NULL;
+    }
 
     memcpy( _received_packet->buf, buf, len );
 
