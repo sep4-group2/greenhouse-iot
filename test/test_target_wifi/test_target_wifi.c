@@ -1,7 +1,7 @@
 // Tests the Wifi module on target
 #define WIFI_SSID "Xiaomi 12"
 #define WIFI_PASSWORD "patty123"
-#define TCP_SERVER "192.168.139.208" // should be running and in echo mode for the test to pass. 
+#define TCP_SERVER "192.168.222.208" // should be running and in echo mode for the test to pass. 
 #define TCP_PORT 23
 
 #include "unity.h"

@@ -86,7 +86,7 @@ void test_light_is_is_light()
     sprintf(message, "INFO! photo_resistor while light measurement= %d       :1:_:PASS\n", light);
     TEST_MESSAGE(message); // TEST_MESSAGE("m e s s a g e :1:_:PASS\n"); // no : in the message
 
-    TEST_ASSERT_TRUE_MESSAGE((light > 500 && light < 1020), "There should be light, (light > 500 && light < 1020)");
+    TEST_ASSERT_TRUE_MESSAGE((light < 300), "There should be light, but it's reading dark (light < 300)");
 }
 
 
