@@ -1,54 +1,77 @@
 #include "unity.h"
-#include "actions.h"
-#include "leds.h"
-#include "pump.h"
-#include "lightbulb.h"
-#include "fertilizer.h"
-#include "periodic_task.h"
 #include <stdbool.h>
+#include <stdint.h>
 
-char mac_address[18] = "00:11:22:33:44:55";
+void notification_send(char *action, bool status) {}
 
+#include "actions.h"
+
+bool leds_mock[5];
+bool pump_state;
+bool light_state;
+
+void leds_turnOn(uint8_t pin) { leds_mock[pin] = true; }
+void leds_turnOff(uint8_t pin) { leds_mock[pin] = false; }
+void leds_toggle(uint8_t pin) { leds_mock[pin] = !leds_mock[pin]; }
+bool leds_isOn(uint8_t pin) { return leds_mock[pin]; }
+
+void pump_on() { pump_state = true; }
+void pump_off() { pump_state = false; }
+bool pump_is_on() { return pump_state; }
+
+void lightbulb_on() { light_state = true; }
+void lightbulb_off() { light_state = false; }
+void lightbulb_toggle() { light_state = !light_state; }
+bool lightbulb_is_on() { return light_state; }
+
+void periodic_task_init_b(void (*callback)(void), uint32_t ms) {}
+
+void fertilizer_trigger() {}
 
 void setUp(void) {
-    pump_off();
-    lightbulb_off();
-    leds_turnOff(2);
-    leds_turnOff(4);
+    for (int i = 0; i < 5; i++) leds_mock[i] = false;
+    pump_state = false;
+    light_state = false;
 }
 
 void tearDown(void) {}
 
-void test_pump_action_starts_pump_and_led(void) {
+void test_actions_pump(void) {
     actions_pump();
-  
+    TEST_ASSERT_TRUE(leds_isOn(4));
+    TEST_ASSERT_TRUE(pump_is_on());
 }
 
-void test_light_on_action_activates_led_and_bulb(void) {
-    actions_light_on();
-}
-
-void test_light_off_action_deactivates_led_and_bulb(void) {
-    actions_light_on();
-    actions_light_off();
-}
-
-void test_light_toggle_action_toggles_state(void) {
-    actions_light_off();
+void test_actions_light_toggle(void) {
+    bool prev = lightbulb_is_on();
     actions_light_toggle();
-    actions_light_toggle();
+    TEST_ASSERT_EQUAL(!prev, lightbulb_is_on());
 }
 
-void test_fertilizer_action_triggers_servo(void) {
+void test_actions_light_on(void) {
+    actions_light_on();
+    TEST_ASSERT_TRUE(lightbulb_is_on());
+    TEST_ASSERT_TRUE(leds_isOn(2));
+}
+
+void test_actions_light_off(void) {
+    actions_light_off();
+    TEST_ASSERT_FALSE(lightbulb_is_on());
+    TEST_ASSERT_FALSE(leds_isOn(2));
+}
+
+void test_actions_fertilizer(void) {
     actions_fertilizer();
+    TEST_PASS();
 }
 
 int main(void) {
     UNITY_BEGIN();
-    RUN_TEST(test_pump_action_starts_pump_and_led);
-    RUN_TEST(test_light_on_action_activates_led_and_bulb);
-    RUN_TEST(test_light_off_action_deactivates_led_and_bulb);
-    RUN_TEST(test_light_toggle_action_toggles_state);
-    RUN_TEST(test_fertilizer_action_triggers_servo);
+    RUN_TEST(test_actions_pump);
+    RUN_TEST(test_actions_light_toggle);
+    RUN_TEST(test_actions_light_on);
+    RUN_TEST(test_actions_light_off);
+    RUN_TEST(test_actions_fertilizer);
     return UNITY_END();
 }
+
