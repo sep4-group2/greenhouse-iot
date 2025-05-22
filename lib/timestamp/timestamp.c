@@ -6,9 +6,7 @@
 #include "wifi.h"
 #include "uart.h"
 
-
-
-#define HTTP_BUFFER_SIZE 555
+#define HTTP_BUFFER_SIZE 1024
 
 static uint8_t hours, minutes, seconds;
 static uint8_t day, month;
@@ -62,7 +60,7 @@ void http_response_callback(uint8_t byte) {
 }
 
 bool timestamp_sync_via_http(void) {
-    static char recv_buf[HTTP_BUFFER_SIZE] = {0};
+    static char recv_buf[HTTP_BUFFER_SIZE] = "";
     int recv_len = 0;
 
     resp_buf = recv_buf;
@@ -77,7 +75,7 @@ bool timestamp_sync_via_http(void) {
     const char http_request[] =
         "GET /v1/forecast?latitude=55.67&longitude=12.56&current_weather=true HTTP/1.1\r\n"
         "Host: api.open-meteo.com\r\n"
-        "Connection: close\r\n\r\n"
+        "Connection: close\r\n"
         "Cache-Control: no-cache\r\n"
         "Pragma: no-cache\r\n\r\n";
 
@@ -98,11 +96,11 @@ bool timestamp_sync_via_http(void) {
 
     char *date_ptr = strstr(recv_buf, "Date: ");
     if (date_ptr) {
-        char date_header[40] = {0};
-        strncpy(date_header, date_ptr + 6, 29);  //
+        char date_header[40] = "";
+        strncpy(date_header, date_ptr + 6, 29);
 
         int d, y, h, m, s;
-        char month_str[4] = {0};
+        char month_str[4] = "";
 
         if (sscanf(date_header, "%*[^,], %d %3s %d %2d:%2d:%2d",
                    &d, month_str, &y, &h, &m, &s) == 6) {
@@ -117,7 +115,7 @@ bool timestamp_sync_via_http(void) {
 
             timestamp_set(h, m, s, d, mo, y); 
 
-            char buf[64];
+            char buf[64] = "";
             sprintf(buf, "Timestamp: %04d-%02d-%02d %02d:%02d:%02d\n", year, month, day, hours, minutes, seconds);
             uart_send_string_blocking(USART_0, buf);
             return true;

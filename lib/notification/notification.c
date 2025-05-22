@@ -4,14 +4,14 @@
 #include "mqtt.h"
 #include "clock.h"
 
-extern char mac_address[18];
+extern char mac_address[24];
 
 void notification_send( char *action, bool status ){
 
     char *topic = "greenhouse/action";
     char *status_text = (status ? "true" : "false" );
-    char timestamp[22] = "0000-00-00T00:00:00Z";
-    // clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
+    char timestamp[32] = "";
+    clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
 
     char payload[200] = "";
 
@@ -21,7 +21,7 @@ void notification_send( char *action, bool status ){
     strcat( payload, action);
     strcat( payload, "\",\"Status\":");
     strcat( payload, status_text);
-    strcat( payload, "\",\"Timestamp\":\"");
+    strcat( payload, ",\"Timestamp\":\"");
     strcat( payload, timestamp);
     strcat( payload, "\"}");
 

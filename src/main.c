@@ -37,7 +37,7 @@ static int cycle = 0;
 static int light_cycle = 0;
 static int dark_cycle = 0;
 
-char mac_address[18];
+char mac_address[24] = "";
 
 char *extract_substring( char *start, char *end );
 
@@ -60,6 +60,7 @@ int main()
 
     _delay_ms(4000);
 
+    wifi_command_disable_echo();
     wifi_command_get_MAC(mac_address);
 
     _delay_ms(1000);
@@ -79,35 +80,47 @@ int main()
 
     // char *ssid = "Xiaomi 12";
     // char *password = "patty123";
-    // char *mqtt_ip = "192.168.139.178";
-    char *ssid = "pixelphon";
-    char *password = "poopdotcom";
-    char *mqtt_ip = "172.25.2.215";
+    // char *mqtt_ip = "192.168.222.178";
+
+    // char *ssid = "pixelphon";
+    // char *password = "poopdotcom";
+    // char *mqtt_ip = "172.25.2.215";
+
+    char *ssid = "iPhone de Joan";
+    char *password = "wifijoan";
+    char *mqtt_ip = "172.20.10.3";
+
+    // char *ssid = "Kamtjatka10";
+    // char *password = "8755444387";
+    // char *mqtt_ip = "10.15.10.25";
+
+    // char *ssid = "Sebino";
+    // char *password = "zzzeeebrak7";
+    // char *mqtt_ip = "172.20.10.7";
+
     int mqtt_port = 1883;
 
-    // if (wifi_command_set_mode_to_1() != WIFI_OK ||
-    //     wifi_command_disable_echo() != WIFI_OK ||
-    //     wifi_command_join_AP(ssid, password) != WIFI_OK) {
-    //     uart_send_string_blocking(USART_0, "Error WiFi\n");
-    //     while(1);
-    // }
+    if (wifi_command_set_mode_to_1() != WIFI_OK ||
+        // wifi_command_disable_echo() != WIFI_OK ||
+        wifi_command_join_AP(ssid, password) != WIFI_OK) {
+        uart_send_string_blocking(USART_0, "Error WiFi\n");
+        while(1);
+    }
 
     // if (!timestamp_sync_via_http()) {
     //     uart_send_string_blocking(USART_0, "Error HTTP\n");
     // }
 
-    // wifi_command_close_TCP_connection();
 
+    uint8_t hour = 0, minute = 0, second = 0;
+    uint8_t day_ = 0, month_ = 0;
+    uint16_t year_ = 0;
 
-    // uint8_t hour = 0, minute = 0, second = 0;
-    // uint8_t day_ = 0, month_ = 0;
-    // uint16_t year_ = 0;
+    timestamp_get(&hour, &minute, &second);
+    timestamp_get_date(&day_, &month_, &year_);
+    clock_init(&global_clock, year_, month_, day_, hour, minute, second);
 
-    // timestamp_get(&hour, &minute, &second);
-    // timestamp_get_date(&day_, &month_, &year_);
-    // clock_init(&global_clock, year_, month_, day_, hour, minute, second);
-
-    // periodic_task_init_c( clock_update_task, 1000);
+    periodic_task_init_c( clock_update_task, 1000);
 
     mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address);
 
@@ -174,7 +187,7 @@ char *extract_from_json( char *to_extract, char *json ){
 
 void loop(){
 
-    char *topic = "greenhouse/sensors";
+    char *topic = "greenhouse/sensor";
 
     uint8_t humidity_int, humidity_dec, temperature_int, temperature_dec;
     uint16_t soil_humidity;
@@ -186,8 +199,11 @@ void loop(){
     uint16_t light_int = light_get_percentage();
     char payload[300] = "";
 
-    sprintf(payload, "{\"MacAddress\":%s,\"SensorData\":[{\"Type\":\"Temperature\",\"Value\":%d,\"Unit\":\"C\",},{\"Type\":\"AirHumidity\",\"Value\":%d,\"Unit\":\"%%\",},{\"Type\":\"SoilHumidity\",\"Value\":%d,\"Unit\":\"%%\",},{\"Type\":\"Brightness\",\"Value\":%d,\"Unit\":\"%%\",}],\"Timestamp\":%s,}",
-    mac_address, temperature_int, humidity_int, soil_humidity, light_int, "2025-05-09T11:45:00Z");
+    char timestamp[32] = "";
+    clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
+
+    sprintf(payload, "{\"MacAddress\":\"%s\",\"SensorData\":[{\"Type\":\"Temperature\",\"Value\":%d,\"Unit\":\"C\"},{\"Type\":\"AirHumidity\",\"Value\":%d,\"Unit\":\"%%\"},{\"Type\":\"SoilHumidity\",\"Value\":%d,\"Unit\":\"%%\"},{\"Type\":\"Brightness\",\"Value\":%d,\"Unit\":\"%%\"}],\"Timestamp\":\"%s\"}",
+    mac_address, temperature_int, humidity_int, soil_humidity, light_int, timestamp);
     
     if ( !preset_is_watering_manual( active_preset ) ){
 
@@ -220,25 +236,29 @@ void loop(){
 
             if( 50 < light_int ){
 
-                if( 0 == light_cycle ){
+                if( 0 == light_cycle ) {
 
                     actions_light_off();
 
                 }
-                else{
-                    --light_cycle;
+                else {
+
+                    light_cycle--;
+
                 }
                 
             }
             else {
 
-                if( 0 == dark_cycle ){
+                if( 0 == dark_cycle ) {
 
                     actions_light_on(2);
 
                 }
-                else{
-                    --dark_cycle;
+                else {
+
+                    dark_cycle--;
+
                 }
 
             }
@@ -251,7 +271,7 @@ void loop(){
         }
 
     }
-    
+
     mqtt_publish( topic, payload, 0, 0, 0 );
 
 }
