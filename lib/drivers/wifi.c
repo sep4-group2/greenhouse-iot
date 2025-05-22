@@ -339,7 +339,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
         return errorMessage;
 
     // Enviar los datos reales
-    uart_send_array_nonBlocking(USART_WIFI, data, length);
+    uart_send_array_nonBlocking( USART_WIFI, data, length);
     return WIFI_OK;
 }
 
@@ -351,7 +351,6 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
     UART_Callback_t callback_state = uart_get_rx_callback(USART_WIFI);
     uart_init(USART_WIFI, wifi_baudrate, wifi_command_callback);
 
-    wifi_command_disable_echo();
     uart_send_string_blocking(USART_WIFI, strcat(sendbuffer, "\r\n"));
 
     for (uint16_t i = 0; i < timeOut_s * 100UL; i++) {
@@ -384,7 +383,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
         }
     }
 
-    wifi_command_enable_echo();
+    // wifi_command_enable_echo();
     wifi_clear_databuffer_and_index();
     uart_init(USART_WIFI, wifi_baudrate, callback_state);
     return error;
