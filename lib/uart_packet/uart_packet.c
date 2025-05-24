@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "uart_packet.h"
 
@@ -33,6 +34,11 @@ int uart_packet_get_len( uart_packet_t self ){
     return self->len;
 }
 
-void uart_packet_free( uart_packet_t self ){
-    if(NULL!= self) free(self);
+void uart_packet_free(uart_packet_t self) {
+    if (self) {
+        if (self->str) {
+            free(self->str);
+        }
+        free(self);
+    }
 }

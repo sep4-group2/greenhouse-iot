@@ -40,6 +40,11 @@ uart_packet_t uart_buffer_pop( uart_buffer_t self ) {
     return pkt;
 }
 
+int uart_buffer_get_count( uart_buffer_t self ) {
+    if ( NULL == self ) return false;
+    return self->count;
+}
+
 bool uart_buffer_is_empty( uart_buffer_t self ) {
     if ( NULL == self ) return false;
     return 0 == self->count;
