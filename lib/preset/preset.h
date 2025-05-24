@@ -1,4 +1,6 @@
 #pragma once
+#include <stdbool.h>
+
 
 typedef enum {
     ACTION_MANUAL,

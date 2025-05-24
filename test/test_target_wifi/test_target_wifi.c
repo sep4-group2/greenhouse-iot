@@ -1,7 +1,7 @@
 // Tests the Wifi module on target
-#define WIFI_SSID "IoT-lab"
-#define WIFI_PASSWORD "2409V#2021a!"
-#define TCP_SERVER "192.168.56.1" // should be running and in echo mode for the test to pass. 
+#define WIFI_SSID "Xiaomi 12"
+#define WIFI_PASSWORD "patty123"
+#define TCP_SERVER "192.168.222.208" // should be running and in echo mode for the test to pass. 
 #define TCP_PORT 23
 
 #include "unity.h"
@@ -71,12 +71,25 @@ void receive()
 {
     // uart_send_string_blocking(USART_0, received_buffer);
 }
+
 void test_wifi_create_TCP_connection()
 {
-    TEST_ASSERT_EQUAL(WIFI_OK, wifi_command_create_TCP_connection(TCP_SERVER, TCP_PORT, receive, received_buffer));
+    int received_length = 0;
+
+    TEST_ASSERT_EQUAL(WIFI_OK,
+        wifi_command_create_TCP_connection(
+            TCP_SERVER,
+            TCP_PORT,
+            receive,
+            received_buffer,
+            &received_length
+        )
+    );
+
     TEST_ASSERT_EQUAL(WIFI_OK, wifi_command_TCP_transmit((uint8_t *)"1234567890", 4));
-     _delay_ms(500);
+    _delay_ms(500);
 }
+
 
 void test_wifi_send_stuff()
 {

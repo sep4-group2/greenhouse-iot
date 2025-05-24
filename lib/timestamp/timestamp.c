@@ -1,10 +1,10 @@
-#include <util/delay.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include "timestamp.h"
 #include "wifi.h"
 #include "uart.h"
+#include "includes.h"
 
 #define HTTP_BUFFER_SIZE 1024
 
@@ -52,12 +52,10 @@ void timestamp_get_date(uint8_t *d, uint8_t *mo, uint16_t *y)
     *y = year;
 }
 
-void http_response_callback(uint8_t byte) {
-    if (resp_buf && resp_index < HTTP_BUFFER_SIZE - 1) {
-        resp_buf[resp_index++] = byte;
-        resp_buf[resp_index] = '\0';
-    }
+void http_response_callback(void) {
+      resp_index = strlen(resp_buf);
 }
+
 
 bool timestamp_sync_via_http(void) {
     static char recv_buf[HTTP_BUFFER_SIZE] = "";
@@ -87,7 +85,9 @@ bool timestamp_sync_via_http(void) {
     uint16_t timeout_ms = 10000;
     uint16_t waited = 0;
     while (waited < timeout_ms) {
-        _delay_ms(10);
+#ifndef UNIT_TEST
+    _delay_ms(10);
+#endif
         waited += 10;
         if (strstr(recv_buf, "\r\n\r\n")) {
             break;
