@@ -270,7 +270,7 @@ void loop(){
 
                 if( 0 == dark_cycle ) {
 
-                    actions_light_on(2);
+                    actions_light_on();
 
                 }
                 else {
