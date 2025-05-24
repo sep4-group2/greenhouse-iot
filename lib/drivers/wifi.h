@@ -105,6 +105,8 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_ip_from_URL(char * url, char *ip_address);
  */
 WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, int *received_message_length );
 
+void wifi_enqueue_data_packet(uint8_t *data, uint16_t length);
+
 /**
  * @brief Transmit data over an established TCP connection.
  * 
