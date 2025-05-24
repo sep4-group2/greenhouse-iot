@@ -1,3 +1,6 @@
+#ifndef EXCLUDE_WIFI
+
+
 #include "wifi.h"
 #include "uart.h"
 #include "uart_buffer.h"
@@ -425,3 +428,6 @@ WIFI_ERROR_MESSAGE_t wifi_get_ntp_time(char *out_buffer) {
     uart_init(USART_WIFI, 115200, prev_cb);
     return (strstr(out_buffer, "+CIPSNTPTIME:") != NULL) ? WIFI_OK : result;
 }
+
+
+#endif

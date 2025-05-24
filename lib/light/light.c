@@ -11,6 +11,9 @@
 
 #include "light.h"
 #include "includes.h"
+#ifdef __AVR__
+#include <avr/io.h>
+
 //A15 PK7!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 /**
  * @brief Initialize ADC for photoresistor
@@ -74,4 +77,4 @@ uint8_t light_get_percentage(void) {
     return ((inverted * 100.00) / 1023.00);   
 }
 
-
+#endif

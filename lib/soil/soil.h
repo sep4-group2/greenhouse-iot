@@ -9,9 +9,13 @@
 #pragma once
 #include <stdint.h>
 
+#ifdef __AVR__
+#include <avr/io.h>
+
 #define SOIL_PIN    PK0
 #define SOIL_ADC_CHANNEL    ADC8D
 
+#endif
 
 /**
  * @brief Initialize ADC for Soil Moisture sensor
@@ -30,3 +34,4 @@ void soil_init();
  * @return 10-bit ADC value read from the Soil Moisture sensor
  */
 uint16_t soil_read();
+

@@ -1,8 +1,7 @@
 #include "unity.h"
 #include "fertilizer.h"
-#include "fff.h"
-
-DEFINE_FFF_GLOBALS;
+#define FFF_GLOBALS
+#include "../fff.h"
 
 // Fake the servo function
 FAKE_VOID_FUNC(servo, int);

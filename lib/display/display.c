@@ -1,5 +1,9 @@
 #include "display.h"
 #include "includes.h"
+
+#ifdef __AVR__
+#include <avr/io.h>
+
 //LATCH
 #define LATCH_BIT PG5
 #define LATCH_DDR DDRG
@@ -160,3 +164,5 @@ void pulse_latch()
     LATCH_PORT &= ~(1 << LATCH_BIT);
     // _delay_us(1);
 }
+
+#endif

@@ -1,4 +1,7 @@
 #include <stdint.h>
+
+
+
 /**
  * @brief Initialize the display (the 4 7-segments)
  * 
@@ -18,3 +21,7 @@ void display_setValues(uint8_t seg1, uint8_t seg2, uint8_t seg3, uint8_t seg4 );
  * @param value between -999 to 9999
  */
 void display_int(int16_t value);
+
+#ifdef __AVR__
+#include <avr/io.h>
+#endif

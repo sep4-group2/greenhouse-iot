@@ -11,6 +11,8 @@
 #pragma once
 #include <stdint.h>
 #include "uart.h"
+#include "includes.h"
+
 
 /**
  * @brief Define which USART module is used for WiFi communication.

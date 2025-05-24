@@ -1,13 +1,19 @@
 #include "unity.h"
+#define FFF_GLOBALS
+#include "../fff.h"
+
+#include <string.h>
+#include <stdbool.h>
+
 #include "notification.h"
-#include "fff.h"
 
-DEFINE_FFF_GLOBALS;
+// --- Setup fakes ---
+FAKE_VOID_FUNC(mqtt_publish, const char*, const char*, int, int, int);
 
-FAKE_VOID_FUNC(mqtt_publish, char*, char*, int, int, int);
+// --- Variables simuladas ---
+char mac_address[18] = "12:34:56:78:9A:BC";
 
-char mac_address[18] = "AA:BB:CC:DD:EE:FF";
-
+// --- setUp y tearDown ---
 void setUp(void) {
     RESET_FAKE(mqtt_publish);
     FFF_RESET_HISTORY();
@@ -15,21 +21,37 @@ void setUp(void) {
 
 void tearDown(void) {}
 
-void test_notification_send_should_publish_correct_payload_when_status_true(void) {
-    char *expected_topic = "greenhouse/action";
-    char *expected_payload_part = "\"Command\":\"Lighting\",\"Status\":true";
+// --- Tests ---
+void test_notification_send_true_status(void) {
+    notification_send("open_window", true);
 
-    notification_send("Lighting", true);
+    TEST_ASSERT_EQUAL(1, mqtt_publish_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING("greenhouse/action", mqtt_publish_fake.arg0_val);
 
-    TEST_ASSERT_EQUAL_STRING(expected_topic, mqtt_publish_arg0_val);
-    TEST_ASSERT_NOT_NULL(mqtt_publish_arg1_val);
-    TEST_ASSERT_NOT_NULL(strstr(mqtt_publish_arg1_val, expected_payload_part));
+    const char* sent_payload = mqtt_publish_fake.arg1_val;
+
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"Command\":\"open_window\""));
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"Status\":true"));
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"MacAddress\":\"12:34:56:78:9A:BC\""));
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"Timestamp\":\"0000-00-00T00:00:00Z\""));
 }
 
-void test_notification_send_should_publish_correct_payload_when_status_false(void) {
-    notification_send("Watering", false);
+void test_notification_send_false_status(void) {
+    notification_send("close_window", false);
 
-    TEST_ASSERT_EQUAL_STRING("greenhouse/action", mqtt_publish_arg0_val);
-    TEST_ASSERT_NOT_NULL(mqtt_publish_arg1_val);
-    TEST_ASSERT_NOT_NULL(strstr(mqtt_publish_arg1_val, "\"Command\":\"Watering\",\"Status\":false"));
+    TEST_ASSERT_EQUAL(1, mqtt_publish_fake.call_count);
+    TEST_ASSERT_EQUAL_STRING("greenhouse/action", mqtt_publish_fake.arg0_val);
+
+    const char* sent_payload = mqtt_publish_fake.arg1_val;
+
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"Command\":\"close_window\""));
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"Status\":false"));
+    TEST_ASSERT_NOT_NULL(strstr(sent_payload, "\"MacAddress\":\"12:34:56:78:9A:BC\""));
+}
+
+int main(void) {
+    UNITY_BEGIN();
+    RUN_TEST(test_notification_send_true_status);
+    RUN_TEST(test_notification_send_false_status);
+    return UNITY_END();
 }

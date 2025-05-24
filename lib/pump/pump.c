@@ -1,6 +1,9 @@
 #include "pump.h"
 #include "includes.h"
 
+#ifdef __AVR__
+#include <avr/io.h>
+
 
 #define PUMP_BIT PC7
 #define PUMP_DDR DDRC
@@ -23,3 +26,5 @@ void pump_off(void) {
 void pump_toggle(void) {
     PUMP_PORT ^= (1 << PUMP_BIT); 
 }
+
+#endif

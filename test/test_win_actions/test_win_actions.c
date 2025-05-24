@@ -1,54 +1,58 @@
 #include "unity.h"
-#include "fff.h"
 #include <stdbool.h>
 #include <stdint.h>
 
+#define FFF_GLOBALS
+#include "../fff.h"
+
 #include "actions.h"
 
+// Typedef necesario para FFF con puntero a función
+typedef void (*callback_t)(void);
+
+// Fakes para dependencias
 FAKE_VOID_FUNC(leds_turnOn, uint8_t);
 FAKE_VOID_FUNC(leds_turnOff, uint8_t);
 FAKE_VOID_FUNC(leds_toggle, uint8_t);
 
 FAKE_VOID_FUNC(pump_on);
 FAKE_VOID_FUNC(pump_off);
+FAKE_VALUE_FUNC(bool, pump_is_on);
 
 FAKE_VOID_FUNC(lightbulb_on);
 FAKE_VOID_FUNC(lightbulb_off);
 FAKE_VOID_FUNC(lightbulb_toggle);
-
-FAKE_VALUE_FUNC(bool, pump_is_on);
 FAKE_VALUE_FUNC(bool, lightbulb_is_on);
 
-FAKE_VOID_FUNC(periodic_task_init_b, void (*callback)(void), uint32_t);
+FAKE_VOID_FUNC(periodic_task_init_b, callback_t, uint32_t);
 FAKE_VOID_FUNC(fertilizer_trigger);
-FAKE_VOID_FUNC(notification_send, char *, bool);
+FAKE_VOID_FUNC(notification_send, char*, bool);
 
-DEFINE_FFF_GLOBALS;
-
+// Setup/teardown
 void setUp(void) {
     FFF_RESET_HISTORY();
+
     RESET_FAKE(leds_turnOn);
     RESET_FAKE(leds_turnOff);
     RESET_FAKE(leds_toggle);
-
     RESET_FAKE(pump_on);
     RESET_FAKE(pump_off);
     RESET_FAKE(pump_is_on);
-    pump_is_on_fake.return_val = true;
-
     RESET_FAKE(lightbulb_on);
     RESET_FAKE(lightbulb_off);
     RESET_FAKE(lightbulb_toggle);
     RESET_FAKE(lightbulb_is_on);
-    lightbulb_is_on_fake.return_val = false;
-
     RESET_FAKE(periodic_task_init_b);
     RESET_FAKE(fertilizer_trigger);
     RESET_FAKE(notification_send);
+
+    pump_is_on_fake.return_val = true;
+    lightbulb_is_on_fake.return_val = false;
 }
 
 void tearDown(void) {}
 
+// Tests
 void test_actions_pump(void) {
     actions_pump();
     TEST_ASSERT_EQUAL(1, leds_turnOn_fake.call_count);

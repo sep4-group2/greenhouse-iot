@@ -1,6 +1,9 @@
 #include "lightbulb.h"
 #include "includes.h"
 
+#ifdef __AVR__
+#include <avr/io.h>
+
 #define LIGHTBULB_BIT PA7
 #define LIGHTBULB_DDR DDRA
 #define LIGHTBULB_PORT PORTA
@@ -22,3 +25,5 @@ void lightbulb_off(void) {
 void lightbulb_toggle(void) {
     LIGHTBULB_PORT ^= (1 << LIGHTBULB_BIT); 
 }
+
+#endif

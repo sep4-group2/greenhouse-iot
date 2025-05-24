@@ -50,3 +50,7 @@ DHT11_ERROR_MESSAGE_t dht11_get(uint8_t* humidity_integer, uint8_t*  humidity_de
 
 
 void dht11_init();
+
+#ifdef __AVR__
+#include <avr/io.h>
+#endif

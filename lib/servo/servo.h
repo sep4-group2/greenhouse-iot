@@ -13,3 +13,6 @@
 void servo(uint8_t angle);
 
 #endif 
+#ifdef __AVR__
+#include <avr/io.h>
+#endif

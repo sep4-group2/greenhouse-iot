@@ -272,3 +272,18 @@ extern uint8_t TCNT2;
 #define PC7 7
 #define PA6 6
 #define PA4 4
+
+
+extern uint8_t TCCR4A;
+extern uint8_t TCCR4B;
+extern uint8_t TCCR5A;
+extern uint8_t TCCR5B;
+
+extern uint16_t TCNT4;
+extern uint16_t OCR4B;
+
+extern uint8_t TIFR4;
+#define OCF4B 2
+
+extern uint8_t TIMSK4;
+#define OCIE4B 2

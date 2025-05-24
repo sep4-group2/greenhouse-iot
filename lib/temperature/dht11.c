@@ -2,10 +2,13 @@
 #include "includes.h"
 
 //Data (The data goes both ways)
-#define DATA_BIT PL1
-#define DATA_PIN PINL
-#define DATA_DDR DDRL
-#define DATA_PORT PORTL
+#ifdef __AVR__
+    #define DATA_BIT PL1
+    #define DATA_PIN PINL
+    #define DATA_DDR DDRL
+    #define DATA_PORT PORTL
+#endif
+
 
 //#define DATA_BIT PD1
 //#define DATA_PIN PIND

@@ -9,7 +9,9 @@
  * @author Erland Larsen, VIA University College
  */
 #include "soil.h"
-#include "avr/io.h"
+
+#ifdef __AVR__
+#include <avr/io.h>
 
 #define SOIL_DRY 480
 #define SOIL_WET 180
@@ -66,3 +68,5 @@ uint16_t soil_read()
 
     return 100.0 - percentage;
 }
+
+#endif

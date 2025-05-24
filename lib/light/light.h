@@ -30,3 +30,6 @@ void light_init(void);
 uint16_t light_read(void);
 uint8_t light_get_percentage(void);
 
+#ifdef __AVR__
+#include <avr/io.h>
+#endif

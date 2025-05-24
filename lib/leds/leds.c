@@ -1,6 +1,9 @@
 #include "leds.h"
 #include "includes.h"
 
+#ifdef __AVR__
+#include <avr/io.h>
+
 #define LED_BIT1 PB7
 #define LED_BIT2 PB6
 #define LED_BIT3 PB5
@@ -74,3 +77,5 @@ case 4:
  }
 
 }
+
+#endif
