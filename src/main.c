@@ -6,6 +6,9 @@
 #include <avr/interrupt.h>
 
 #include "uart.h"
+#include "uart_packet.h"
+#include "uart_buffer.h"
+
 #include "wifi.h"
 #include "light.h"
 #include "display.h"
@@ -29,6 +32,9 @@
 #include "clock.h"
 
 extern volatile mqtt_buffer_t mqtt_packet_buffer;
+extern volatile uart_buffer_t uart_buffer;
+extern volatile uint8_t usart2_transmission_in_progress;
+extern volatile uart_packet_t current_pkt;
 
 static preset_t active_preset;
 static bool water_pump_trigger = false;
@@ -78,17 +84,17 @@ int main()
 
     sei();
 
-    // char *ssid = "Xiaomi 12";
-    // char *password = "patty123";
-    // char *mqtt_ip = "192.168.222.178";
+    char *ssid = "Xiaomi 12";
+    char *password = "patty123";
+    char *mqtt_ip = "192.168.253.178";
 
     // char *ssid = "pixelphon";
     // char *password = "poopdotcom";
     // char *mqtt_ip = "172.25.2.215";
 
-    char *ssid = "iPhone de Joan";
-    char *password = "wifijoan";
-    char *mqtt_ip = "172.20.10.3";
+    // char *ssid = "iPhone de Joan";
+    // char *password = "wifijoan";
+    // char *mqtt_ip = "172.20.10.3";
 
     // char *ssid = "Kamtjatka10";
     // char *password = "8755444387";
@@ -139,6 +145,14 @@ int main()
             process_single_packet( packet_type, buf, len );
 
         }
+
+        if( !uart_buffer_is_empty( uart_buffer ) && !usart2_transmission_in_progress ){
+
+            current_pkt = uart_buffer_pop(uart_buffer);
+            wifi_command_TCP_transmit(uart_packet_get_str(current_pkt), uart_packet_get_len(current_pkt));
+
+        }
+
     }
 
     return 0;
@@ -295,12 +309,12 @@ static void process_single_publish ( char *publish_topic, char *publish_payload 
 
         actions_fertilizer();
 
-    } else if (strcmp(publish_topic, "preset") == 0) {
+    } else if (strcmp(publish_topic, "Configuration") == 0) {
 
         char *watering_method = extract_from_json( "WateringMethod", publish_payload );
 
         if( 0 == strcmp( watering_method, "\"manual\"" ) ) preset_set_watering_method( active_preset, ACTION_MANUAL );
-        else if( 0 == strcmp( watering_method, "\"automated\"" ) ) {
+        else if( 0 == strcmp( watering_method, "\"automatic\"" ) ) {
 
             preset_set_watering_method( active_preset, ACTION_AUTOMATED );
 
@@ -317,7 +331,7 @@ static void process_single_publish ( char *publish_topic, char *publish_payload 
         char *lighting_method = extract_from_json( "LightingMethod", publish_payload );
 
         if( 0 == strcmp( lighting_method, "\"manual\"" ) ) preset_set_lighting_method( active_preset, ACTION_MANUAL );
-        else if( 0 == strcmp( lighting_method, "\"automated\"" ) ) {
+        else if( 0 == strcmp( lighting_method, "\"automatic\"" ) ) {
 
             preset_set_lighting_method( active_preset, ACTION_AUTOMATED );
 
@@ -367,7 +381,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
             get_topic_with_address( topic1, "light" );
             get_topic_with_address( topic2, "watering" );
-            get_topic_with_address( topic3, "preset" );
+            get_topic_with_address( topic3, "Configuration" );
             get_topic_with_address( topic4, "fertilizer" );
 
             char *subscribe_topics[] = { 
