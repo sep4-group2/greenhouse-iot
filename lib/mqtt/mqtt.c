@@ -83,8 +83,10 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
         connect_packet_buf, connect_packet_buflen, local_client_id
     );
 
-    WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
-    return wifi_mqtt_connect_message;
+    wifi_enqueue_data_packet(connect_packet_buf, connect_packet_len);
+    return WIFI_OK;
+    // WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
+    // return wifi_mqtt_connect_message;
 
 }
 
@@ -118,8 +120,11 @@ WIFI_ERROR_MESSAGE_t mqtt_reconnect( char *ip, uint16_t port, char *client_id )
         connect_packet_buf, connect_packet_buflen, local_client_id
     );
 
-    WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
-    return wifi_mqtt_connect_message;
+    wifi_enqueue_data_packet(connect_packet_buf, connect_packet_len);
+    return WIFI_OK;
+
+    // WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
+    // return wifi_mqtt_connect_message;
 
 }
 
@@ -145,8 +150,11 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
         uart_send_string_blocking(USART_0, "Failed to serialize mqtt publish packet.\n");
         return WIFI_ERROR_RECEIVING_GARBAGE;
     }
+    
+    wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
+    return WIFI_OK;
 
-    return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
+    // return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
 WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos_flags[] )
@@ -166,7 +174,10 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos
         return WIFI_ERROR_RECEIVING_GARBAGE;
     }
 
-    return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
+    wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
+    return WIFI_OK;
+
+    // return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
 
