@@ -185,8 +185,9 @@ char *extract_from_json( char *to_extract, char *json ){
     sprintf( temp, "\"%s\"", to_extract );
 
     char *extracted_start = strstr( json, temp );
+    if (!extracted_start) return NULL;
     extracted_start = strstr( extracted_start, ":" );
-
+    if (!extracted_start) return NULL;
     ++extracted_start;
     char *extracted_end;
 
@@ -199,6 +200,8 @@ char *extract_from_json( char *to_extract, char *json ){
 
 }
 
+static char payload[300] = "";
+
 void loop(){
 
     char *topic = "greenhouse/sensor";
@@ -210,8 +213,7 @@ void loop(){
 
     soil_humidity = soil_read();
 
-    uint16_t light_int = light_get_percentage();
-    char payload[300] = "";
+    uint16_t light_int = light_get_percentage();;
 
     char timestamp[32] = "";
     clock_to_string( &global_clock, timestamp, sizeof(timestamp) );
@@ -313,43 +315,51 @@ static void process_single_publish ( char *publish_topic, char *publish_payload 
 
         char *watering_method = extract_from_json( "WateringMethod", publish_payload );
 
-        if( 0 == strcmp( watering_method, "\"manual\"" ) ) preset_set_watering_method( active_preset, ACTION_MANUAL );
-        else if( 0 == strcmp( watering_method, "\"automatic\"" ) ) {
-
+        if( 0 == strcmp( watering_method, "\"manual\"" ) ) {
+            preset_set_watering_method( active_preset, ACTION_MANUAL );
+        } else if( 0 == strcmp( watering_method, "\"automatic\"" ) ) {
             preset_set_watering_method( active_preset, ACTION_AUTOMATED );
 
             char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", publish_payload );
             int min_soil_humidity = atoi( min_soil_humidity_string );
             preset_set_min_soil_humidity( active_preset, min_soil_humidity );
+            free(min_soil_humidity_string); // <-- ADD THIS
 
             char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", publish_payload );
             int max_soil_humidity = atoi( max_soil_humidity_string );
             preset_set_min_soil_humidity( active_preset, max_soil_humidity );
-
+            free(max_soil_humidity_string); // <-- ADD THIS
         }
+        free(watering_method);
 
         char *lighting_method = extract_from_json( "LightingMethod", publish_payload );
-
-        if( 0 == strcmp( lighting_method, "\"manual\"" ) ) preset_set_lighting_method( active_preset, ACTION_MANUAL );
-        else if( 0 == strcmp( lighting_method, "\"automatic\"" ) ) {
-
+        if( 0 == strcmp( lighting_method, "\"manual\"" ) ) {
+            preset_set_lighting_method( active_preset, ACTION_MANUAL );
+        } else if( 0 == strcmp( lighting_method, "\"automatic\"" ) ) {
             preset_set_lighting_method( active_preset, ACTION_AUTOMATED );
 
             char *hours_of_light_string = extract_from_json( "HoursOfLight", publish_payload );
             int hours_of_light = atoi( hours_of_light_string );
             preset_set_light_hours( active_preset, hours_of_light );
+            free(hours_of_light_string); // <-- ADD THIS
 
             cycle = 96;
             light_cycle = hours_of_light * 4;
             dark_cycle = cycle - light_cycle;
-
         }
+        free(lighting_method);
 
 
     } else {
         uart_send_string_blocking(USART_0, "3\n");
     }
 }
+
+static char publish_payload[256] = "";
+static char topic1[50] = "";
+static char topic2[50] = "";
+static char topic3[50] = "";
+static char topic4[60] = "";
 
 static void process_single_packet( unsigned char packet_type, char* buf, int len ) {
 
@@ -373,11 +383,6 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
     case CONNACK:
 
         if ( MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, len) == 1 ) {
-
-            char topic1[50];
-            char topic2[50];
-            char topic3[50];
-            char topic4[60];
 
             get_topic_with_address( topic1, "light" );
             get_topic_with_address( topic2, "watering" );
@@ -429,11 +434,13 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
                 topic_copy[topic.lenstring.len] = '\0';
             }
 
-                char publish_payload[128] = "";
-
-                strncpy( publish_payload, payload, payload_len );
+                int copy_len = (payload_len < sizeof(publish_payload) - 1) ? payload_len : sizeof(publish_payload) - 1;
+                strncpy(publish_payload, (char*)payload, copy_len);
+                publish_payload[copy_len] = '\0'; // Always null-terminate
 
                 process_single_publish( topic_copy, publish_payload );
+
+                free(topic_copy);
 
             if (qos == 1) {
                 unsigned char puback_buf[50];
