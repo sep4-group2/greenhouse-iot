@@ -2,6 +2,9 @@
 
 
 #include "uart.h"
+#include "uart_packet.h"
+#include "uart_buffer.h"
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -14,6 +17,9 @@ static UART_Callback_t usart0_rx_callback = NULL;
 static UART_Callback_t usart1_rx_callback = NULL;
 static UART_Callback_t usart2_rx_callback = NULL;
 static UART_Callback_t usart3_rx_callback = NULL;
+
+// static uart_buffer_t uart_buffer = NULL;
+
 UART_Callback_t uart_get_rx_callback(USART_t usart){
     switch (usart)
     {
@@ -190,6 +196,7 @@ void uart_init(USART_t usart, uint32_t baudrate, UART_Callback_t callback)
         uart_init_usart1(ubrr, callback);
         break;
     case USART_2:
+        // uart_buffer = uart_buffer_init();
         uart_init_usart2(ubrr, callback);
         break;
     case USART_3:
@@ -276,12 +283,14 @@ static volatile uint8_t usart1_transmission_in_progress = 0;
 static volatile uint8_t *usart2_transmit_buffer;
 static volatile uint16_t usart2_transmit_index;
 static volatile uint16_t usart2_transmit_length;
-static volatile uint8_t usart2_transmission_in_progress = 0;
+volatile uint8_t usart2_transmission_in_progress = 0;
 
 static volatile uint8_t *usart3_transmit_buffer;
 static volatile uint16_t usart3_transmit_index;
 static volatile uint16_t usart3_transmit_length;
 static volatile uint8_t usart3_transmission_in_progress = 0;
+
+volatile uart_packet_t current_pkt = NULL;
 
 void uart_send_array_nonBlocking(USART_t usart, uint8_t *str, uint16_t len)
 {
@@ -401,16 +410,23 @@ ISR(USART1_UDRE_vect)
 
 ISR(USART2_UDRE_vect)
 {
-    // Check if we have more data to send
     if (usart2_transmit_index < usart2_transmit_length)
     {
-        UDR2 = usart2_transmit_buffer[usart2_transmit_index++]; // Send next character and increment index
+        UDR2 = usart2_transmit_buffer[usart2_transmit_index++];
     }
     else
     {
-        // Disable the Data Register Empty Interrupt when transmission is complete
-        UCSR2B &= ~(1 << UDRIE2);            // Disable USART0 data register empty interrupt
-        usart2_transmission_in_progress = 0; // Clear the transmission_in_progress flag
+        UCSR2B &= ~(1 << UDRIE2);
+        usart2_transmission_in_progress = 0;
+        
+        usart2_transmit_buffer = NULL;
+        usart2_transmit_index = 0;
+        usart2_transmit_length = 0;
+
+        if (current_pkt != NULL) {
+            uart_packet_free(current_pkt);
+            current_pkt = NULL;
+        }
     }
 }
 

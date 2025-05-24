@@ -1,20 +1,22 @@
 #include "wifi.h"
+#include "uart.h"
+#include "uart_buffer.h"
+#include "uart_packet.h"
 #include "includes.h"
 
 
-#include "uart.h"
 #define WIFI_DATABUFFERSIZE 512
 static uint8_t wifi_dataBuffer[WIFI_DATABUFFERSIZE];
 static uint8_t wifi_dataBufferIndex;
 static uint32_t wifi_baudrate;
 
-
-
+volatile uart_buffer_t uart_buffer;
 
 void wifi_init()
 {
     wifi_baudrate = 115200;
     uart_init(USART_WIFI, wifi_baudrate, NULL);
+    uart_buffer = uart_buffer_init();
 }
 
 /*
@@ -327,6 +329,11 @@ WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(
     return errorMessage;
 }
 
+void wifi_enqueue_data_packet(uint8_t *data, uint16_t length) {
+    uart_packet_t temp = uart_packet_init(data, length);
+    uart_buffer_push(uart_buffer, temp);
+}
+
 WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
     char sendbuffer[512];
     char portString[7];
@@ -339,7 +346,10 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
         return errorMessage;
 
     // Enviar los datos reales
-    uart_send_array_nonBlocking(USART_WIFI, data, length);
+    uart_send_array_nonBlocking( USART_WIFI, data, length );
+    // uart_packet_t temp = uart_packet_init( data, length );
+    // uart_buffer_push( uart_buffer, temp );
+
     return WIFI_OK;
 }
 
@@ -351,7 +361,6 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
     UART_Callback_t callback_state = uart_get_rx_callback(USART_WIFI);
     uart_init(USART_WIFI, wifi_baudrate, wifi_command_callback);
 
-    wifi_command_disable_echo();
     uart_send_string_blocking(USART_WIFI, strcat(sendbuffer, "\r\n"));
 
     for (uint16_t i = 0; i < timeOut_s * 100UL; i++) {
@@ -384,7 +393,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_MAC(char *mac_buffer)
         }
     }
 
-    wifi_command_enable_echo();
+    // wifi_command_enable_echo();
     wifi_clear_databuffer_and_index();
     uart_init(USART_WIFI, wifi_baudrate, callback_state);
     return error;

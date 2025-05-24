@@ -48,7 +48,7 @@ void clock_tick(Clock *clk) {
 }
 
 void clock_to_string(const Clock *clk, char *buffer, size_t size) {
-    snprintf(buffer, size, "%04u-%02u-%02uT%02u:%02u:%02uZ",
+    snprintf(buffer, size, "%04u-%02u-%02uT%02u:%02u:%02uZ\0",
         clk->year, clk->month, clk->day,
         clk->hour, clk->minute, clk->second);
 }

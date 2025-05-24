@@ -55,8 +55,6 @@ void uart_send_blocking(USART_t usart,uint8_t data);
  */
 void uart_send_array_nonBlocking(USART_t usart,  uint8_t *str, uint16_t len);
 
-void uart2_send_array_nonblocking(uint8_t *data, uint16_t length);
-
 /**
  * @brief Send an array of data over UART using blocking method.
  * 

@@ -13,10 +13,10 @@
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 512
 
-unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE];
+unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE] = "";
 int mqtt_received_message_length;
 
-extern char mac_address[18];
+// extern char mac_address[18];
 
 volatile mqtt_buffer_t mqtt_packet_buffer;
 
@@ -44,6 +44,9 @@ void mqtt_init()
 
 WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_t port, char *client_id )
 {
+    char local_client_id[24];
+    strncpy(local_client_id, client_id, 24);
+    // local_client_id[sizeof(client_id) - 1] = '\0';
 
     WIFI_ERROR_MESSAGE_t wifi_network_connect_message = wifi_command_join_AP( ssid, password );
 
@@ -77,16 +80,21 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
     unsigned char connect_packet_buf[200];
     int connect_packet_buflen = sizeof(connect_packet_buf);
     int connect_packet_len = create_connect_packet(
-        connect_packet_buf, connect_packet_buflen, client_id
+        connect_packet_buf, connect_packet_buflen, local_client_id
     );
 
-    WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
-    return wifi_mqtt_connect_message;
+    wifi_enqueue_data_packet(connect_packet_buf, connect_packet_len);
+    return WIFI_OK;
+    // WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
+    // return wifi_mqtt_connect_message;
 
 }
 
 WIFI_ERROR_MESSAGE_t mqtt_reconnect( char *ip, uint16_t port, char *client_id )
 {
+
+    char local_client_id[24];
+    strncpy(local_client_id, client_id, 24);
 
     wifi_command_close_TCP_connection();
 
@@ -109,11 +117,14 @@ WIFI_ERROR_MESSAGE_t mqtt_reconnect( char *ip, uint16_t port, char *client_id )
     unsigned char connect_packet_buf[200];
     int connect_packet_buflen = sizeof(connect_packet_buf);
     int connect_packet_len = create_connect_packet(
-        connect_packet_buf, connect_packet_buflen, client_id
+        connect_packet_buf, connect_packet_buflen, local_client_id
     );
 
-    WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
-    return wifi_mqtt_connect_message;
+    wifi_enqueue_data_packet(connect_packet_buf, connect_packet_len);
+    return WIFI_OK;
+
+    // WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
+    // return wifi_mqtt_connect_message;
 
 }
 
@@ -139,8 +150,11 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
         uart_send_string_blocking(USART_0, "Failed to serialize mqtt publish packet.\n");
         return WIFI_ERROR_RECEIVING_GARBAGE;
     }
+    
+    wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
+    return WIFI_OK;
 
-    return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
+    // return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
 WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos_flags[] )
@@ -160,7 +174,10 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos
         return WIFI_ERROR_RECEIVING_GARBAGE;
     }
 
-    return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
+    wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
+    return WIFI_OK;
+
+    // return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
 
@@ -255,6 +272,7 @@ void callback_when_message_received()
 
         mqtt_received_packet_t received_packet = mqtt_received_packet_init( packet_type, &mqtt_received_message_buf[pos], packet_total_len );
         mqtt_buffer_push( mqtt_packet_buffer, received_packet );
+
         pos += packet_total_len;
     }
 
