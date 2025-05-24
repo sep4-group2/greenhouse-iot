@@ -1,5 +1,7 @@
 #ifdef EXCLUDE_UART
 
+#include "uart_packet.h"
+#include "uart_buffer.h"
 #include "uart.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -15,6 +17,8 @@ UART_Callback_t uart_get_rx_callback(USART_t usart) { return NULL; }
 #else
 
 #ifndef EXCLUDE_UART
+#include "uart_packet.h"
+#include "uart_buffer.h"
 #include "uart.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -164,12 +168,14 @@ static volatile uint8_t usart1_transmission_in_progress = 0;
 static volatile uint8_t *usart2_transmit_buffer;
 static volatile uint16_t usart2_transmit_index;
 static volatile uint16_t usart2_transmit_length;
-static volatile uint8_t usart2_transmission_in_progress = 0;
+volatile uint8_t usart2_transmission_in_progress = 0;
+volatile uart_packet_t current_pkt = NULL;
 
 static volatile uint8_t *usart3_transmit_buffer;
 static volatile uint16_t usart3_transmit_index;
 static volatile uint16_t usart3_transmit_length;
 static volatile uint8_t usart3_transmission_in_progress = 0;
+
 
 void uart_send_array_nonBlocking(USART_t usart, uint8_t *str, uint16_t len) {
     switch(usart) {
@@ -235,12 +241,25 @@ ISR(USART1_UDRE_vect) {
     }
 }
 
-ISR(USART2_UDRE_vect) {
+ISR(USART2_UDRE_vect)
+{
     if (usart2_transmit_index < usart2_transmit_length)
+    {
         UDR2 = usart2_transmit_buffer[usart2_transmit_index++];
-    else {
+    }
+    else
+    {
         UCSR2B &= ~(1 << UDRIE2);
         usart2_transmission_in_progress = 0;
+        
+        usart2_transmit_buffer = NULL;
+        usart2_transmit_index = 0;
+        usart2_transmit_length = 0;
+
+        if (current_pkt != NULL) {
+            uart_packet_free(current_pkt);
+            current_pkt = NULL;
+        }
     }
 }
 
