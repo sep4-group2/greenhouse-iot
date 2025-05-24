@@ -144,6 +144,8 @@ int main()
 
             process_single_packet( packet_type, buf, len );
 
+            mqtt_received_packet_free( temp );
+
         }
 
         if( !uart_buffer_is_empty( uart_buffer ) && !usart2_transmission_in_progress ){

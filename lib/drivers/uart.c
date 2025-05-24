@@ -418,6 +418,10 @@ ISR(USART2_UDRE_vect)
     {
         UCSR2B &= ~(1 << UDRIE2);
         usart2_transmission_in_progress = 0;
+        
+        usart2_transmit_buffer = NULL;
+        usart2_transmit_index = 0;
+        usart2_transmit_length = 0;
 
         if (current_pkt != NULL) {
             uart_packet_free(current_pkt);
