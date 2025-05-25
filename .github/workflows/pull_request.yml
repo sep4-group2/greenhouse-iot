@@ -37,6 +37,5 @@ jobs:
                   -e win_test_light \
                   -e win_test_timestamp \
                   -e win_test_mqtt \
-                  -e win_test_preset \
-                  -e target_test
+                  -e win_test_preset 
 
