@@ -1,10 +1,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+
 #include "mqtt.h"
-#ifndef WINDOWS_TEST
 #include "clock.h"
-#endif
+
 
 extern char mac_address[24];
 

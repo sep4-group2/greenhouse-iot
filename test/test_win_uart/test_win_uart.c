@@ -8,11 +8,11 @@ FAKE_VOID_FUNC(sei);
 FAKE_VOID_FUNC(cli);
 
 void setUp(void) {
-  // set stuff up here
+  
 }
 
 void tearDown(void) {
-  // clean stuff up here
+  
 }
 
 void test_uart_init0(){
