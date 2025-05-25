@@ -1,5 +1,5 @@
 # GitHub Actions Workflow for Greenhouse-IoT
-name: Build and Test Firmware
+name: Build and Test Firmwaree
 
 on:
   push:
