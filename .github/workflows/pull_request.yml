@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform: [test_win_light]
+        platform: [win_test_preset, win_test_wifi, target_test, win_test_fertilizer, win_test_timestamp, target_run, win_test_clock, win_test_notifications, win_test_light, win_test_uart, win_test_actions, win_test_mqtt]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
