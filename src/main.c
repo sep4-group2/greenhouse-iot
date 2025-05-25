@@ -59,7 +59,8 @@ void loop();
 
 int main()
 {
-    
+    printf("staring main");
+
     active_preset = preset_init();
     uart_init( USART_0, 9600, NULL );
     wifi_init();
