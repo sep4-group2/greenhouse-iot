@@ -7,13 +7,10 @@
 
 #include "notification.h"
 
-// --- Setup fakes ---
 FAKE_VOID_FUNC(mqtt_publish, const char*, const char*, int, int, int);
 
-// --- Variables simuladas ---
 char mac_address[18] = "12:34:56:78:9A:BC";
 
-// --- setUp y tearDown ---
 void setUp(void) {
     RESET_FAKE(mqtt_publish);
     FFF_RESET_HISTORY();
@@ -21,7 +18,6 @@ void setUp(void) {
 
 void tearDown(void) {}
 
-// --- Tests ---
 void test_notification_send_true_status(void) {
     notification_send("open_window", true);
 
