@@ -12,9 +12,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: sep4_drivers
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4
