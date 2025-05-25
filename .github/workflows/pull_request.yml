@@ -18,9 +18,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Set up PlatformIO
-        uses: platformio/platformio-action@v2
+      
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
 
       - name: Build firmware
         run: |
@@ -33,8 +33,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up PlatformIO
-        uses: platformio/platformio-action@v2
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
 
       - name: Run unit tests
         run: |
@@ -64,8 +64,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up PlatformIO
-        uses: platformio/platformio-action@v2
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
 
       - name: Run integration tests
         run: |
