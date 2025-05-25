@@ -26,5 +26,17 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Build PlatformIO Project
-        run: pio run
+      - name: Run PlatformIO Tests
+        run: |
+          pio test -e win_test_wifi \
+                  -e win_test_uart \
+                  -e win_test_notifications \
+                  -e win_test_actions \
+                  -e win_test_fertilizer \
+                  -e win_test_clock \
+                  -e win_test_light \
+                  -e win_test_timestamp \
+                  -e win_test_mqtt \
+                  -e win_test_preset \
+                  -e target_test
+
