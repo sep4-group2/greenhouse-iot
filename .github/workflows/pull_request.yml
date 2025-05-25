@@ -26,6 +26,9 @@ jobs:
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
+      - name: Check contents of lib/Mocks
+        run: ls -R lib/Mocks
+
       - name: Run PlatformIO Tests
         run: |
           pio test -e win_test_wifi \
