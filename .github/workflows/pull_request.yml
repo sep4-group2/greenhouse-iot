@@ -1,1 +1,88 @@
+# GitHub Actions Workflow for Greenhouse-IoT
+name: Build and Test Firmware
 
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [target_run, target_test, win_test, win_test_wifi, win_test_pc_comm, win_test_light]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up PlatformIO
+        uses: platformio/action-install@v2.0.0
+
+      - name: Build firmware
+        run: |
+          pio run -e ${{ matrix.platform }}
+
+  unit_tests:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up PlatformIO
+        uses: platformio/action-install@v2.0.0
+
+      - name: Run unit tests
+        run: |
+          pio test \
+            -e win_test \
+            -e win_test_wifi \
+            -e win_test_pc_comm \
+            -e win_test_light \
+            -e win_test_actions \
+            -e win_clock \
+            -e win_fertilizer \
+            -e win_mqtt \
+            -e win_notification \
+            -e win_preset \
+            -e win_timestamp \
+            -e win_uart
+
+  integration_tests:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      mosquitto:
+        image: eclipse-mosquitto:latest
+        ports:
+          - 1883:1883
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up PlatformIO
+        uses: platformio/action-install@v2.0.0
+
+      - name: Run integration tests
+        run: |
+          pio test -e target_test
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build, unit_tests, integration_tests]
+    if: github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up PlatformIO
+        uses: platformio/action-install@v2.0.0
+
+      - name: Publish firmware
+        run: |
+          # Replace with your artifact publishing steps
+          echo "Publishing firmware..."
