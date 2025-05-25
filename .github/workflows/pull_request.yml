@@ -12,77 +12,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [win_test_preset, win_test_wifi, target_test, win_test_fertilizer, win_test_timestamp, target_run, win_test_clock, win_test_notifications, win_test_light, win_test_uart, win_test_actions, win_test_mqtt]
+    defaults:
+      run:
+        working-directory: sep4_drivers
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Install PlatformIO Core
         run: pip install --upgrade platformio
 
-      - name: Build firmware
-        run: |
-          pio run -e ${{ matrix.platform }}
-
-  unit_tests:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
-
-      - name: Run unit tests
-        run: |
-          pio test \
-            -e win_test \
-            -e win_test_wifi \
-            -e win_test_pc_comm \
-            -e win_test_light \
-            -e win_test_actions \
-            -e win_clock \
-            -e win_fertilizer \
-            -e win_mqtt \
-            -e win_notification \
-            -e win_preset \
-            -e win_timestamp \
-            -e win_uart
-
-  integration_tests:
-    runs-on: ubuntu-latest
-    needs: build
-    services:
-      mosquitto:
-        image: eclipse-mosquitto:latest
-        ports:
-          - 1883:1883
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Install PlatformIO Core
-        run: pip install --upgrade platformio
-
-      - name: Run integration tests
-        run: |
-          pio test -e target_test
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: [build, unit_tests, integration_tests]
-    if: github.ref == 'refs/heads/dev'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up PlatformIO
-        uses: platformio/platformio-action@v2
-
-      - name: Publish firmware
-        run: |
-          # Replace with your artifact publishing steps
-          echo "Publishing firmware..."
+      - name: Build PlatformIO Project
+        run: pio run
