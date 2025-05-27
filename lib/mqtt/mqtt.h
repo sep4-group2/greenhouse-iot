@@ -14,3 +14,5 @@ WIFI_ERROR_MESSAGE_t mqtt_publish ( char *topic, char *payload,
     int dup_flag, int qos_flag, int retained_flag );
 
 WIFI_ERROR_MESSAGE_t mqtt_subscribe ( mqtt_topics_t topics, int dup_flag, int qos_flags[] );
+
+WIFI_ERROR_MESSAGE_t mqtt_pingreq( );
