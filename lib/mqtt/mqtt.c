@@ -13,11 +13,14 @@
 #include "MQTTPacket.h"
 
 #define MQTT_RECEIVED_MESSAGE_BUF_SIZE 512
+#define MQTT_TRANSMIT_MESSAGE_BUF_SIZE 512
 
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE] = "";
 int mqtt_received_message_length;
 
 volatile mqtt_buffer_t mqtt_packet_buffer;
+
+static char transmit_buf[512] = "";
 
 static int create_connect_packet ( unsigned char *buf, int buflen, char *client_id );
 static int create_publish_packet ( 
@@ -131,11 +134,8 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
     else
         packet_id = 0;
 
-    char transmit_buf[1028];
-    int transmit_buflen = sizeof(transmit_buf);
-
     int transmit_len = create_publish_packet(
-        topic, payload, transmit_buf, transmit_buflen,
+        topic, payload, transmit_buf, MQTT_TRANSMIT_MESSAGE_BUF_SIZE,
         dup_flag, qos_flag, retained_flag, packet_id
     );
 
@@ -153,11 +153,8 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos
 {
     short packet_id = 1;
 
-    char transmit_buf[1028];
-    int transmit_buflen = sizeof(transmit_buf);
-
     int transmit_len = create_subscribe_packet(
-        topics, transmit_buf, transmit_buflen,
+        topics, transmit_buf, MQTT_TRANSMIT_MESSAGE_BUF_SIZE,
         dup_flag, packet_id, qos_flags 
     );
 
@@ -171,6 +168,21 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos
 
 }
 
+WIFI_ERROR_MESSAGE_t mqtt_pingreq( )
+{
+    short packet_id = 1;
+
+    int transmit_len = MQTTSerialize_pingreq( transmit_buf, MQTT_TRANSMIT_MESSAGE_BUF_SIZE );
+
+    if (transmit_len <= 0) {
+        uart_send_string_blocking(USART_0, "Failed to serialize mqtt pubreq packet.\n");
+        return WIFI_ERROR_RECEIVING_GARBAGE;
+    }
+
+    wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
+    return WIFI_OK;
+
+}
 
 // helper functions for packet creation n stuff
 
