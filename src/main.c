@@ -87,7 +87,7 @@ int main()
 
     char *ssid = "Xiaomi 12";
     char *password = "patty123";
-    char *mqtt_ip = "192.168.253.178";
+    char *mqtt_ip = "192.168.237.178";
 
     int mqtt_port = 1883;
 
