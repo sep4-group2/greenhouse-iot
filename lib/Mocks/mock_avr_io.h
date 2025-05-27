@@ -194,7 +194,9 @@ extern uint8_t DIDR2;
 extern uint8_t TCCR3A;
 extern uint8_t TCCR3B;
 extern uint8_t OCR3A;
+extern uint8_t OCR5A;
 extern uint8_t TIMSK3;
+extern uint8_t TIMSK5;
 extern uint8_t OCR3B;
 extern uint8_t OCR3C;
 
@@ -287,3 +289,4 @@ extern uint8_t TIFR4;
 
 extern uint8_t TIMSK4;
 #define OCIE4B 2
+#define OCIE5A 1
