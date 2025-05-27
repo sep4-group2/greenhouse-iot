@@ -87,37 +87,15 @@ int main()
 
     char *ssid = "Xiaomi 12";
     char *password = "patty123";
-    char *mqtt_ip = "192.168.253.178";
-
-    // char *ssid = "pixelphon";
-    // char *password = "poopdotcom";
-    // char *mqtt_ip = "172.25.2.215";
-
-    // char *ssid = "iPhone de Joan";
-    // char *password = "wifijoan";
-    // char *mqtt_ip = "172.20.10.3";
-
-    // char *ssid = "Kamtjatka10";
-    // char *password = "8755444387";
-    // char *mqtt_ip = "10.15.10.25";
-
-    // char *ssid = "Sebino";
-    // char *password = "zzzeeebrak7";
-    // char *mqtt_ip = "172.20.10.7";
+    char *mqtt_ip = "192.168.237.178";
 
     int mqtt_port = 1883;
 
     if (wifi_command_set_mode_to_1() != WIFI_OK ||
-        // wifi_command_disable_echo() != WIFI_OK ||
         wifi_command_join_AP(ssid, password) != WIFI_OK) {
         uart_send_string_blocking(USART_0, "Error WiFi\n");
         while(1);
     }
-
-    // if (!timestamp_sync_via_http()) {
-    //     uart_send_string_blocking(USART_0, "Error HTTP\n");
-    // }
-
 
     uint8_t hour = 0, minute = 0, second = 0;
     uint8_t day_ = 0, month_ = 0;
@@ -131,7 +109,7 @@ int main()
 
     mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address);
 
-    periodic_task_init_a( loop, 10000 );
+    periodic_task_init_a( loop, 900000 );
 
     while (1) {
 
@@ -326,12 +304,12 @@ static void process_single_publish ( char *publish_topic, char *publish_payload 
             char *min_soil_humidity_string = extract_from_json( "MinSoilHumidity", publish_payload );
             int min_soil_humidity = atoi( min_soil_humidity_string );
             preset_set_min_soil_humidity( active_preset, min_soil_humidity );
-            free(min_soil_humidity_string); // <-- ADD THIS
+            free(min_soil_humidity_string);
 
             char *max_soil_humidity_string = extract_from_json( "MaxSoilHumidity", publish_payload );
             int max_soil_humidity = atoi( max_soil_humidity_string );
             preset_set_min_soil_humidity( active_preset, max_soil_humidity );
-            free(max_soil_humidity_string); // <-- ADD THIS
+            free(max_soil_humidity_string);
         }
         free(watering_method);
 
@@ -344,7 +322,7 @@ static void process_single_publish ( char *publish_topic, char *publish_payload 
             char *hours_of_light_string = extract_from_json( "HoursOfLight", publish_payload );
             int hours_of_light = atoi( hours_of_light_string );
             preset_set_light_hours( active_preset, hours_of_light );
-            free(hours_of_light_string); // <-- ADD THIS
+            free(hours_of_light_string);
 
             cycle = 96;
             light_cycle = hours_of_light * 4;
@@ -439,7 +417,7 @@ static void process_single_packet( unsigned char packet_type, char* buf, int len
 
                 int copy_len = (payload_len < sizeof(publish_payload) - 1) ? payload_len : sizeof(publish_payload) - 1;
                 strncpy(publish_payload, (char*)payload, copy_len);
-                publish_payload[copy_len] = '\0'; // Always null-terminate
+                publish_payload[copy_len] = '\0';
 
                 process_single_publish( topic_copy, publish_payload );
 
