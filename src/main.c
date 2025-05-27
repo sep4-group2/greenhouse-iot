@@ -57,6 +57,8 @@ static void get_topic_with_address( char *topic_dest, char *topic );
 
 void loop();
 
+void loop_ping_req();
+
 int main()
 {
     printf("staring main");
@@ -110,6 +112,7 @@ int main()
     mqtt_connect(ssid, password, mqtt_ip, mqtt_port, mac_address);
 
     periodic_task_init_a( loop, 900000 );
+    periodic_task_init_d( loop_ping_req, 45000 );
 
     while (1) {
 
@@ -271,6 +274,12 @@ void loop(){
 
     mqtt_publish( topic, payload, 0, 0, 0 );
 
+}
+
+void loop_ping_req() {
+    if (mqtt_pingreq() != WIFI_OK) {
+        uart_send_string_blocking(USART_0, "Error pinging MQTT broker\n");
+    }
 }
 
 static void process_single_publish ( char *publish_topic, char *publish_payload ){

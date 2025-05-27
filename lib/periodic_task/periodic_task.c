@@ -16,18 +16,24 @@
 static void (*user_func_a)(void);  // Pointer to first user function
 static void (*user_func_b)(void);  // Pointer to second user function
 static void (*user_func_c)(void);  // Pointer to third user function
+static void (*user_func_d)(void);  // Pointer to fourth user function!
+
+void periodic_task_disable_b();
 
 static uint16_t ocr3_value = 0;
 static uint16_t ocr3c_value = 0;
 static uint16_t ocr4_value = 0;
+static uint16_t ocr5_value = 0;
 
 static uint16_t cnt_a = 0;
 static uint16_t cnt_b = 0;
 static uint16_t cnt_c = 0;
+static uint16_t cnt_d = 0;
 
 static uint16_t loops_a = 0;
 static uint16_t loops_b = 0;
 static uint16_t loops_c = 0;
+static uint16_t loops_d = 0;
 
 
 // Timer0 Compare Match A interrupt service routine
@@ -71,6 +77,21 @@ ISR(TIMER3_COMPC_vect) {
     }
     else{
         cnt_c--;
+    }
+}
+
+ISR(TIMER5_COMPA_vect) {
+    if (cnt_d==0)
+    {
+
+        OCR5A=OCR5A+ocr5_value;
+        cnt_d=loops_d;
+        
+        user_func_d();
+
+    }
+    else{
+        cnt_d--;
     }
 }
 #endif
@@ -166,6 +187,21 @@ void periodic_task_init_c(void (*user_function_c)(void), uint32_t interval_ms_c)
 
     // Enable Timer0 Compare Match C interrupt
     TIMSK3 |= (1 << OCIE3C);
+}
+
+void periodic_task_init_d(void (*user_function_d)(void), uint32_t interval_ms_d) {
+    user_func_d = user_function_d;
+    init_timer5();
+
+    cnt_d = (interval_ms_d/1000*(F_CPU/1024))/0xFFFF;//(interval_ms_a*125)>>19;
+    loops_d=cnt_d;
+    ocr5_value=(uint32_t)interval_ms_d*(F_CPU/1024)/1000-(uint32_t)cnt_d*0xFFFF;
+    
+    OCR5A = ocr5_value;
+
+
+    // Enable Timer0 Compare Match C interrupt
+    TIMSK5 |= (1 << OCIE5A);
 }
 
 

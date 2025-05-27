@@ -26,6 +26,7 @@
         "mqtt_received_packet.h": "c",
         "periodic_task.h": "c",
         "uart_packet.h": "c",
-        "uart_buffer.h": "c"
+        "uart_buffer.h": "c",
+        "includes.h": "c"
     }
 }

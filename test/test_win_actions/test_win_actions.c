@@ -7,10 +7,8 @@
 
 #include "actions.h"
 
-// Typedef necesario para FFF con puntero a función
 typedef void (*callback_t)(void);
 
-// Fakes para dependencias
 FAKE_VOID_FUNC(leds_turnOn, uint8_t);
 FAKE_VOID_FUNC(leds_turnOff, uint8_t);
 FAKE_VOID_FUNC(leds_toggle, uint8_t);
