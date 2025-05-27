@@ -348,10 +348,7 @@ WIFI_ERROR_MESSAGE_t wifi_command_TCP_transmit(uint8_t * data, uint16_t length){
     if (errorMessage != WIFI_OK)
         return errorMessage;
 
-    // Enviar los datos reales
     uart_send_array_nonBlocking( USART_WIFI, data, length );
-    // uart_packet_t temp = uart_packet_init( data, length );
-    // uart_buffer_push( uart_buffer, temp );
 
     return WIFI_OK;
 }
