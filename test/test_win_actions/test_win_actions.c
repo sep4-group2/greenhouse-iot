@@ -50,7 +50,6 @@ void setUp(void) {
 
 void tearDown(void) {}
 
-// Tests
 void test_actions_pump(void) {
     actions_pump();
     TEST_ASSERT_EQUAL(1, leds_turnOn_fake.call_count);

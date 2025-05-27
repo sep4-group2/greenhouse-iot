@@ -6,6 +6,7 @@
 #include "clock.h"
 
 
+
 extern char mac_address[24];
 
 void notification_send( char *action, bool status ){

@@ -3,7 +3,6 @@
 #define FFF_GLOBALS
 #include "../fff.h"
 
-// Fake the servo function
 FAKE_VOID_FUNC(servo, int);
 
 void setUp(void) {
