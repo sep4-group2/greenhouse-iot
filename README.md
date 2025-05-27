@@ -1,50 +1,62 @@
-# greenhouse-iot
+# SmartGrow IoT
 
-# sep4_drivers
-This repository contains a collection of drivers designed to to work with the hardware at SEP4 at Software Technology Engineering at VIA. All drivers are located in the lib/drivers directory.
+This project is a 4th semester IoT system called SmartGrow for greenhouse management and automation. It enables monitoring and control of environmental variables such as temperature, humidity, light, irrigation, fertilization, and more, using sensors and actuators connected to a VIA Shield board.
 
+## Main Features
+- Temperature and humidity monitoring
+- Light and lightbulb control
+- Irrigation and water pump management
+- Servo and actuator control
+- Automated fertilization
+- Notifications and alerts
+- Communication via MQTT and UART
+- Periodic tasks and timing
 
-### 1. adxl345.h
-This driver interfaces with the ADXL345 chip, a 3-axis accelerometer, that measures up to ±4 g. It can be used to measure the static acceleration of gravity in tilt-sensing applications, as well as dynamic acceleration resulting from motion or shock.
+## Project Structure
+- `src/`: Main source code (`main.c`)
+- `lib/`: Libraries and system modules
+  - `actions/`: Control logic and actions
+  - `clock/`, `timestamp/`: Time and timer management
+  - `display/`: Display control
+  - `fertilizer/`: Fertilization logic
+  - `leds/`, `light/`, `lightbulb/`: Lighting control
+  - `mqtt/`, `mqtt_buffer/`, `mqtt_received_publish/`, `mqtt_subscribe_topics/`, `MQTTPacket/`: MQTT communication
+  - `notification/`: Notifications and alerts
+  - `periodic_task/`: Periodic tasks
+  - `preset/`: Configuration presets
+  - `pump/`: Water pump control
+  - `servo/`: Servo control
+  - `soil/`: Soil sensors
+  - `temperature/`: Temperature and humidity sensors
+  - `uart/`, `uart_buffer/`, `uart_packet/`: UART communication
+  - `wifi/`: WiFi communication
+- `test/`: Unit and integration tests
+- `doc/`: Documentation and diagrams
 
-### 2. buttons.h
-This driver is designed to control the three buttons located on top of the multifunction shield.
+## How to Build and Run
+1. Install PlatformIO in your development environment (VS Code recommended).
+2. Clone this repository.
+3. Open the project folder in VS Code.
+4. Connect your Arduino board to your computer via USB.
+5. Build and upload the firmware to the Arduino using PlatformIO:
+   ```powershell
+   pio run --target upload
+   ```
+6. The system will start running automatically after upload. You can monitor serial output using:
+   ```powershell
+   pio device monitor
+   ```
 
-### 3. buzzer.h
-Controls the active buzzer positioned on the multifunction shield. 
+## Testing
+Tests are located in the `test/` folder. Run them with PlatformIO:
+```powershell
+pio test
+```
 
-### 4. dht11.h
-The DHT11 is a basic digital temperature and humidity sensor. This driver allows for interfacing with the DHT11 to obtain temperature and humidity readings.
+## Credits
+Developed by Group 2X: IoT team.
 
-### 5. display.h
-This driver controls the four 7-segment displays positioned on top of the multifunction shield. It can be used to display numbers or certain characters.
-
-### 6. hc_sr04.h
-The HC-SR04 is an ultrasonic ranging module that provides 2 cm to 400 cm non-contact measurement functionality. This driver facilitates the measurement of distance using ultrasonic waves.
-
-### 7. leds.h
-Controls the four LEDs located on top of the multifunction shield. This can be used for indication, signaling, or other visual purposes.
-
-### 8. light.h
-This driver controls the photoresistor and is capable of measuring the amount of light in the environment.
-
-### 9. pc_comm.h
-Facilitates communication to the PC over USB using UART. 
-
-### 10. periodic_task.h
-This driver sets up an interrupt-based service that can call a function at a specified interval. It's useful for tasks that need to be executed periodically without manual intervention.
-
-### 11. pir.h
-This driver interfaces with the HC-SR501 is a passive infrared (PIR) motion sensor. 
-
-### 12. servo.h
-This driver interfaces with the SG90 servo motor and can set it to a position ranging from 0 to 180 degrees.
-
-### 13. tone.h
-This driver can generate tones of specified frequencies, using a passive buzzer. By providing different frequency values, you can play various tones or even simple melodies.
-
-### 14. uart.h
-This driver facilitates UART (Universal Asynchronous Receiver-Transmitter) communication. It is utilized by both the pc_comm and wifi drivers to enable data transfer and communication functionalities.
-
-### 15. wifi.h
-This driver interfaces with the ESP8266 module, a Wi-Fi microchip with full TCP/IP stack and microcontroller capability. With this driver, you can connect to an Access Point (AP) and establish a TCP connection, and send and receive data through the TCP-connection.
+Maria Yepez 
+Dominik Kielbowski 
+Joan Hageneier 
+Sebastian Villarroel

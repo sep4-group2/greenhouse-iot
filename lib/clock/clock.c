@@ -8,6 +8,7 @@ static bool is_leap_year(uint16_t year) {
     return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
+
 static uint8_t days_in_month(uint8_t month, uint16_t year) {
     static const uint8_t days[12] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
     if (month == 2 && is_leap_year(year)) return 29;

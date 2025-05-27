@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 
-//from light.c
 uint8_t ADMUX;
 uint8_t ADCSRA;
 uint8_t ADCSRB;
