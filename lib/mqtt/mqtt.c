@@ -17,8 +17,6 @@
 unsigned char mqtt_received_message_buf[MQTT_RECEIVED_MESSAGE_BUF_SIZE] = "";
 int mqtt_received_message_length;
 
-// extern char mac_address[18];
-
 volatile mqtt_buffer_t mqtt_packet_buffer;
 
 static int create_connect_packet ( unsigned char *buf, int buflen, char *client_id );
@@ -47,7 +45,6 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
 {
     char local_client_id[24];
     strncpy(local_client_id, client_id, 24);
-    // local_client_id[sizeof(client_id) - 1] = '\0';
 
     WIFI_ERROR_MESSAGE_t wifi_network_connect_message = wifi_command_join_AP( ssid, password );
 
@@ -86,8 +83,6 @@ WIFI_ERROR_MESSAGE_t mqtt_connect( char *ssid, char *password, char *ip, uint16_
 
     wifi_enqueue_data_packet(connect_packet_buf, connect_packet_len);
     return WIFI_OK;
-    // WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
-    // return wifi_mqtt_connect_message;
 
 }
 
@@ -124,9 +119,6 @@ WIFI_ERROR_MESSAGE_t mqtt_reconnect( char *ip, uint16_t port, char *client_id )
     wifi_enqueue_data_packet(connect_packet_buf, connect_packet_len);
     return WIFI_OK;
 
-    // WIFI_ERROR_MESSAGE_t wifi_mqtt_connect_message = wifi_command_TCP_transmit(connect_packet_buf, connect_packet_len);
-    // return wifi_mqtt_connect_message;
-
 }
 
 WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int qos_flag, int retained_flag )
@@ -155,7 +147,6 @@ WIFI_ERROR_MESSAGE_t mqtt_publish( char *topic, char *payload, int dup_flag, int
     wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
     return WIFI_OK;
 
-    // return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
 WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos_flags[] )
@@ -178,7 +169,6 @@ WIFI_ERROR_MESSAGE_t mqtt_subscribe( mqtt_topics_t topics, int dup_flag, int qos
     wifi_enqueue_data_packet((uint8_t *)transmit_buf, transmit_len);
     return WIFI_OK;
 
-    // return wifi_command_TCP_transmit((uint8_t *)transmit_buf, transmit_len);
 }
 
 
